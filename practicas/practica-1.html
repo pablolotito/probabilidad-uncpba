@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 1 — Experimentos aleatorios, espacio muestral y eventos</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' },
+                   options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav .sub{font-size:11px;color:var(--muted);margin:0 0 16px 8px;line-height:1.4}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button:hover{filter:brightness(1.08)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav">
+    <h1>Práctica 1</h1>
+    <p class="sub">Experimentos aleatorios · Espacio muestral · Eventos · Probabilidad<br>
+       Lic. en Matemática — UNCPBA</p>
+    <div id="navlinks"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════════════ HELPERS DE DIBUJO ══════════════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un diagrama de Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+/* Barra horizontal etiquetada */
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════════════ DATOS: LOS 21 EJERCICIOS ══════════════ */
+const G1="Espacio muestral y eventos", G2="Probabilidad", G3="Propiedades y demostraciones";
+
+const EJERCICIOS = [
+
+/* ───────────── 1 ───────────── */
+{id:"ej1",g:G1,titulo:"1. Espacios muestrales",tema:"Modelado · nueve experimentos",
+ enunciado:`Asociar un espacio muestral a cada uno de los siguientes experimentos aleatorios.
+ <ul>
+ <li>(a) Urna con 2 bolillas blancas y una negra: se sacan 2 al azar simultáneamente y se anotan los colores.</li>
+ <li>(b) Ídem (a) pero con reemplazo.</li>
+ <li>(c) Se colocan al azar tres bolillas diferentes en tres urnas diferentes, pudiéndose poner más de una por urna.</li>
+ <li>(d) Se arroja una moneda; si sale cara se arroja un dado, si sale ceca se lanzan dos dados.</li>
+ <li>(e) Un viajante debe visitar cinco ciudades y traza su itinerario.</li>
+ <li>(f) Artículos clasificados en defectuosos ($D$) y no defectuosos ($N$); se continúa hasta que se produzcan dos defectuosos consecutivos o hasta verificar cuatro artículos.</li>
+ <li>(g) Caja con 12 lámparas, 4 con filamento roto: se prueban hasta encontrar una quemada.</li>
+ <li>(h) Se observa 24 horas el motor de una bomba y se registra en qué instante comenzó a funcionar, o si no lo hizo.</li>
+ <li>(i) Juan y Pedro tiran alternadamente al aro hasta encestar; una moneda decide quién empieza.</li>
+ </ul>`,
+ resultado:`(a) $|S|=2$ &nbsp;·&nbsp; (b) $|S|=4$ &nbsp;·&nbsp; (c) $|S|=27$ &nbsp;·&nbsp; (d) $|S|=42$ &nbsp;·&nbsp;
+ (e) $|S|=120$ &nbsp;·&nbsp; (f) $|S|=12$ &nbsp;·&nbsp; (g) $|S|=9$ &nbsp;·&nbsp;
+ (h) $S=[0,24]\\cup\\{\\text{no arranca}\\}$ &nbsp;·&nbsp; (i) infinito numerable.`,
+ pasos:[
+  {t:"Qué tiene que cumplir S",h:"El espacio muestral debe ser <b>exhaustivo</b> (todo resultado posible está) y <b>excluyente</b> (cada realización produce exactamente un elemento). No es único: depende de qué se decida observar."},
+  {t:"Cuidado con «anotar los colores» (a)",h:"Al anotar sólo colores, $S=\\{BB,BN\\}$ tiene 2 elementos — pero <b>no son equiprobables</b>. Numerando las bolillas, los pares son $B_1B_2$, $B_1N$, $B_2N$, así que $P(BB)=1/3$ y $P(BN)=2/3$. $S$ dice qué puede pasar, no con qué probabilidad."},
+  {t:"Ramas con estructura distinta (d)",h:"El resultado debe incluir el símbolo de la moneda: sin él, «3» sería ambiguo. $S$ es la unión disjunta de $6$ resultados de la rama cara y $36$ de la rama ceca: $|S|=42$."},
+  {t:"Regla de parada doble (f)",h:"Las secuencias tienen longitud variable entre 2 y 4: se corta apenas aparece $DD$, o al llegar a 4 observaciones. Enumerando el árbol quedan 12: una de largo 2 ($DD$), una de largo 3 ($NDD$) y diez de largo 4."},
+  {t:"S no siempre es finito (g,h,i)",h:"En (g), como hay 8 sanas, la novena prueba es forzosamente quemada: $S=\\{1,\\dots,9\\}$. En (h) $S$ es <b>mixto</b>: un intervalo continuo más un átomo. En (i) es infinito numerable."}],
+ sim:{controles:[{id:"k",label:"Cortar al verificar k artículos",min:2,max:6,step:1,val:4}],
+  draw:function(ctx,W,H,p){
+    const K=p.k, S=[];
+    (function rec(s){ if(s.length>=2&&s.slice(-2)==='DD'){S.push(s);return;}
+                      if(s.length===K){S.push(s);return;} rec(s+'D'); rec(s+'N'); })('');
+    T(ctx,'Inciso (f): secuencias de parada — se corta con DD o al llegar a k artículos',16,22,{s:12.5,col:'--muted'});
+    const cols=6, cw=(W-32)/cols, y0=48, ch=34;
+    S.forEach((s,i)=>{
+      const x=16+(i%cols)*cw, y=y0+Math.floor(i/cols)*ch;
+      const stop = s.slice(-2)==='DD';
+      ctx.fillStyle=stop?alpha(C('--accent'),.22):C('--panel');
+      RR(ctx,x+3,y,cw-9,ch-8,7);ctx.fill();
+      ctx.strokeStyle=stop?C('--accent'):C('--line');ctx.lineWidth=1.2;ctx.stroke();
+      T(ctx,s,x+(cw-6)/2,y+(ch-8)/2+5,{s:14,b:stop,a:'center'});
+    });
+    const yb=y0+Math.ceil(S.length/cols)*ch+18;
+    T(ctx,'Azul: terminó por dos defectuosos consecutivos.   Gris: terminó por alcanzar el máximo de artículos.',16,yb,{s:11.5,col:'--muted'});
+    return {"|S|":S.length, "Terminan en DD":S.filter(s=>s.slice(-2)==='DD').length,
+            "Longitud máxima":Math.max.apply(null,S.map(s=>s.length))};
+  }}},
+
+/* ───────────── 2 ───────────── */
+{id:"ej2",g:G1,titulo:"2. Tres fusibles",tema:"Eventos · álgebra de conjuntos",
+ enunciado:`Se examinan tres fusibles en secuencia y se observa si están o no defectuosos.
+ <ul><li>(a) Describir el espacio muestral. ¿Cuántos elementos tiene?</li>
+ <li>(b) Expresar por extensión: $C$: exactamente un fusible defectuoso; $D$: a lo sumo uno defectuoso;
+ $E$: los tres en las mismas condiciones. ¿Cuáles son mutuamente excluyentes? Expresarlos en función de
+ $A_i$ = «el fusible $i$ está defectuoso». ¿Cuántos elementos tiene cada $B_i$ = «hay exactamente $i$ defectuosos»?</li></ul>`,
+ resultado:`$|S|=2^3=8$. &nbsp; $C=\\{DNN,NDN,NND\\}$, $D=\\{NNN,DNN,NDN,NND\\}$, $E=\\{DDD,NNN\\}$.
+ Sólo $C$ y $E$ son mutuamente excluyentes. $|B_i|=\\binom{3}{i}$: $1,3,3,1$.`,
+ pasos:[
+  {t:"El espacio muestral",h:"Se observa en orden, así que cada resultado es una terna: $S=\\{D,N\\}^3$, con $|S|=2^3=8$."},
+  {t:"«A lo sumo uno» incluye ninguno",h:"$D=\\{NNN,DNN,NDN,NND\\}$ tiene 4 elementos, no 3. Notar que $C\\subset D$: todo resultado con exactamente un defectuoso tiene a lo sumo uno."},
+  {t:"Quiénes son excluyentes",h:"$C\\cap E=\\varnothing$ porque $C$ exige exactamente un defectuoso y $E$ exige cero o tres. En cambio $D\\cap E=\\{NNN\\}\\neq\\varnothing$ y $C\\cap D=C\\neq\\varnothing$. Sólo $C$ y $E$."},
+  {t:"En función de los $A_i$",h:"Cada resultado se escribe como intersección de los tres eventos o sus complementos. Por ejemplo $C=(A_1\\cap A_2^c\\cap A_3^c)\\cup(A_1^c\\cap A_2\\cap A_3^c)\\cup(A_1^c\\cap A_2^c\\cap A_3)$: una unión <b>disjunta</b>, lo que después permitirá sumar probabilidades sin corregir."},
+  {t:"Los $B_i$ particionan S",h:"Elegir cuáles $i$ de los 3 fusibles fallan es una combinación: $|B_i|=\\binom{3}{i}$, es decir $1,3,3,1$. Control: $1+3+3+1=8=|S|$."}],
+ sim:simFinito(
+  ['DDD','DDN','DND','DNN','NDD','NDN','NND','NNN'].map(s=>({t:s,s:s})),4,
+  [{id:'C',label:'C: exactamente uno defectuoso',pred:o=>o.s.split('').filter(c=>c==='D').length===1},
+   {id:'D',label:'D: a lo sumo uno defectuoso',pred:o=>o.s.split('').filter(c=>c==='D').length<=1},
+   {id:'E',label:'E: los tres iguales',pred:o=>o.s[0]===o.s[1]&&o.s[1]===o.s[2]}],
+  'S = {D,N}³ — marcá eventos y elegí la operación')},
+
+/* ───────────── 3 ───────────── */
+{id:"ej3",g:G1,titulo:"3. Instalación: dos calderas y un motor",tema:"Álgebra de eventos · De Morgan",
+ enunciado:`Sea $M$ el evento de que el motor esté en buenas condiciones y $C_i$ $(i=1,2)$ el de que la
+ $i$-ésima caldera lo esté. $I$ es el evento de que la instalación funcione. Si la instalación funciona
+ cada vez que el motor y al menos una caldera están en buenas condiciones, expresar $I$ e $I^c$ mediante
+ $M$, $C_1$ y $C_2$.`,
+ resultado:`$I=M\\cap(C_1\\cup C_2)$ &nbsp;&nbsp;·&nbsp;&nbsp; $I^c=M^c\\cup(C_1^c\\cap C_2^c)$`,
+ pasos:[
+  {t:"Traducir el «y»",h:"Se exigen dos condiciones <b>simultáneas</b>: motor bien <b>y</b> al menos una caldera bien. El «y» del castellano es la intersección."},
+  {t:"Traducir el «al menos una»",h:"«Al menos una de dos» es la unión: $C_1\\cup C_2$. Es un «o» inclusivo — las dos calderas pueden estar bien a la vez. Queda $I=M\\cap(C_1\\cup C_2)$."},
+  {t:"Complementar con De Morgan",h:"$I^c=\\big(M\\cap(C_1\\cup C_2)\\big)^c=M^c\\cup(C_1\\cup C_2)^c$, y aplicando De Morgan otra vez, $(C_1\\cup C_2)^c=C_1^c\\cap C_2^c$."},
+  {t:"Leer el resultado en palabras",h:"$I^c=M^c\\cup(C_1^c\\cap C_2^c)$: la instalación falla si falla el motor, <b>o</b> si fallan las dos calderas a la vez. Probá las 8 combinaciones en el simulador."}],
+ sim:{controles:[{id:'M',label:'Motor en buenas condiciones',tipo:'check',val:1},
+                 {id:'C1',label:'Caldera 1 en buenas condiciones',tipo:'check',val:1},
+                 {id:'C2',label:'Caldera 2 en buenas condiciones',tipo:'check',val:0}],
+  draw:function(ctx,W,H,p){
+    const ok = p.M && (p.C1||p.C2);
+    const box=(x,y,w,h,on,lab,sub)=>{
+      ctx.fillStyle=on?alpha(C('--accent2'),.22):alpha(C('--bad'),.18);
+      RR(ctx,x,y,w,h,10);ctx.fill();
+      ctx.strokeStyle=on?C('--accent2'):C('--bad');ctx.lineWidth=2;ctx.stroke();
+      T(ctx,lab,x+w/2,y+h/2-2,{s:17,b:1,a:'center'});
+      T(ctx,sub,x+w/2,y+h/2+18,{s:12,a:'center',col:'--muted'});};
+    box(60,50,180,90,p.M,'Motor',p.M?'funciona':'falla');
+    box(300,30,180,64,p.C1,'Caldera 1',p.C1?'funciona':'falla');
+    box(300,116,180,64,p.C2,'Caldera 2',p.C2?'funciona':'falla');
+    ctx.strokeStyle=C('--muted');ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(240,95);ctx.lineTo(270,95);ctx.moveTo(270,62);ctx.lineTo(270,148);
+    ctx.moveTo(270,62);ctx.lineTo(300,62);ctx.moveTo(270,148);ctx.lineTo(300,148);ctx.stroke();
+    T(ctx,'Y',255,88,{s:12,b:1,a:'center',col:'--muted'});
+    T(ctx,'O',276,110,{s:12,b:1,a:'center',col:'--muted'});
+    ctx.fillStyle=ok?alpha(C('--accent2'),.20):alpha(C('--bad'),.16);
+    RR(ctx,540,60,300,70,12);ctx.fill();
+    ctx.strokeStyle=ok?C('--accent2'):C('--bad');ctx.lineWidth=2.5;ctx.stroke();
+    T(ctx,ok?'LA INSTALACIÓN FUNCIONA':'LA INSTALACIÓN NO FUNCIONA',690,102,
+      {s:ok?17:15.5,b:1,a:'center',col:ok?'--accent2':'--bad'});
+    T(ctx, ok ? 'Se cumple  M ∩ (C₁ ∪ C₂)'
+              : (!p.M ? 'Falla el motor  →  está en Mᶜ' : 'Fallan las dos calderas  →  C₁ᶜ ∩ C₂ᶜ'),
+      690,225,{s:14,a:'center',col:'--muted'});
+    T(ctx,'I = M ∩ (C₁ ∪ C₂)',690,275,{s:15,b:1,a:'center',col:'--accent'});
+    T(ctx,'Iᶜ = Mᶜ ∪ (C₁ᶜ ∩ C₂ᶜ)',690,302,{s:15,b:1,a:'center',col:'--accent'});
+    T(ctx,'Probá las 8 combinaciones: la instalación funciona en 3 de ellas.',60,300,{s:12,col:'--muted'});
+    return {"Estado":ok?'Funciona':'No funciona',
+            "Casos favorables":"3 de 8",
+            "Si todo es equiprobable":"P(I) = 0,3750"};
+  }}},
+
+/* ───────────── 4 ───────────── */
+{id:"ej4",g:G1,titulo:"4. Dos dados: E, F y G",tema:"Operaciones entre eventos · inclusión-exclusión",
+ enunciado:`Se arrojan dos dados. Sean $E$ = «la suma de los números obtenidos es impar»,
+ $F$ = «sale el 1 al menos una vez», $G$ = «la suma es 5». Describir los eventos
+ (a) $E\\cap F$, (b) $E\\cup F$, (c) $E\\cap F^c$, (d) $F\\cap G$, (e) $E\\cap F\\cap G$.`,
+ resultado:`Sobre $|S|=36$: (a) $6$, $P=1/6$ &nbsp;·&nbsp; (b) $23$, $P=23/36$ &nbsp;·&nbsp;
+ (c) $12$, $P=1/3$ &nbsp;·&nbsp; (d) $\\{(1,4),(4,1)\\}$, $P=1/18$ &nbsp;·&nbsp;
+ (e) $=F\\cap G$ porque $G\\subset E$, $P=1/18$.`,
+ pasos:[
+  {t:"Cardinales de base",h:"$|S|=36$ resultados equiprobables. La suma es impar cuando un dado es par y el otro impar: $|E|=2\\cdot3\\cdot3=18$. Para $F$ conviene el complemento: $|F|=36-5^2=11$. Y $G=\\{(1,4),(4,1),(2,3),(3,2)\\}$, $|G|=4$."},
+  {t:"(a) E ∩ F",h:"Como el $1$ es impar, para que la suma sea impar el otro dado debe ser par: $\\{(1,2),(1,4),(1,6),(2,1),(4,1),(6,1)\\}$. Son 6, $P=1/6$."},
+  {t:"(b) E ∪ F por inclusión-exclusión",h:"$|E\\cup F|=|E|+|F|-|E\\cap F|=18+11-6=23$. El $-6$ corrige el doble conteo de los resultados que están en ambos. $P=23/36\\approx0{,}6389$."},
+  {t:"(c) E ∩ Fᶜ",h:"Suma impar pero sin ningún 1: $|E|-|E\\cap F|=18-6=12$, o sea $P=1/3$. Restar la intersección es la forma sistemática de quitar una condición."},
+  {t:"(d) y (e): aprovechar que G ⊂ E",h:"$F\\cap G=\\{(1,4),(4,1)\\}$: de los cuatro resultados que suman 5, sólo dos tienen un 1. Y como $5$ es impar, <b>todo</b> resultado de $G$ está en $E$, así que $E\\cap F\\cap G=F\\cap G$. Reconocer la inclusión ahorra la intersección triple."}],
+ sim:(function(){const outs=[];for(let i=1;i<=6;i++)for(let j=1;j<=6;j++)outs.push({t:i+','+j,i:i,j:j});
+   return simFinito(outs,6,
+    [{id:'E',label:'E: suma impar',pred:o=>(o.i+o.j)%2===1},
+     {id:'F',label:'F: sale un 1',pred:o=>o.i===1||o.j===1},
+     {id:'G',label:'G: la suma es 5',pred:o=>o.i+o.j===5}],
+    'S = {1,…,6}² — 36 resultados equiprobables');})()},
+
+/* ───────────── 5 ───────────── */
+{id:"ej5",g:G1,titulo:"5. Una moneda y un dado",tema:"Espacio producto · expresiones de eventos",
+ enunciado:`Se lanza una moneda y un dado. (a) Definir un espacio muestral. (b) Expresar explícitamente
+ $A$ = «se obtiene un par y una cara», $B$ = «se obtiene un número primo», $\\mathcal{C}$ = «se obtiene un
+ número impar y una ceca». (c) Encontrar expresiones para: (i) sólamente ocurre $B$; (ii) ocurren tanto
+ $A$ como $B$ pero no $\\mathcal{C}$; (iii) por lo menos dos ocurren; (iv) ocurre uno y no más;
+ (v) no ocurren más de dos.`,
+ resultado:`$|S|=12$. (i) $B\\cap A^c\\cap\\mathcal{C}^c$ · (ii) $A\\cap B\\cap\\mathcal{C}^c$ ·
+ (iii) $(A\\cap B)\\cup(A\\cap\\mathcal{C})\\cup(B\\cap\\mathcal{C})$ ·
+ (iv) $(A\\cap B^c\\cap\\mathcal{C}^c)\\cup(A^c\\cap B\\cap\\mathcal{C}^c)\\cup(A^c\\cap B^c\\cap\\mathcal{C})$ ·
+ (v) $(A\\cap B\\cap\\mathcal{C})^c=S$.`,
+ pasos:[
+  {t:"El espacio producto",h:"$S=\\{C,X\\}\\times\\{1,\\dots,6\\}$, con $|S|=12$ resultados equiprobables si moneda y dado son equilibrados."},
+  {t:"Ojo con el 1 y con B",h:"$1$ <b>no es primo</b>, así que $B=\\{(C,2),(C,3),(C,5),(X,2),(X,3),(X,5)\\}$. $B$ no impone condición sobre la moneda: por eso tiene 6 elementos y no 3."},
+  {t:"«Sólo B» y «al menos dos»",h:"«Sólo ocurre $B$» exige que los otros dos no ocurran: $B\\cap A^c\\cap\\mathcal{C}^c$. «Por lo menos dos» es la unión de las tres intersecciones de a pares — una unión <b>no</b> disjunta: el caso de los tres está contado tres veces."},
+  {t:"«Exactamente uno»",h:"Se enumeran los tres casos, cada uno afirmando un evento y negando los otros dos. Ahora sí la unión es disjunta y las probabilidades se pueden sumar directamente."},
+  {t:"El detalle final",h:"«No ocurren más de dos» es la negación de «ocurren los tres»: $(A\\cap B\\cap\\mathcal{C})^c$. Pero acá $A$ exige cara y $\\mathcal{C}$ exige ceca, así que $A\\cap\\mathcal{C}=\\varnothing$ y la respuesta es <b>todo</b> $S$."}],
+ sim:(function(){const outs=[];['C','X'].forEach(m=>{for(let i=1;i<=6;i++)outs.push({t:m+','+i,m:m,i:i});});
+   return simFinito(outs,6,
+    [{id:'A',label:'A: par y cara',pred:o=>o.m==='C'&&o.i%2===0},
+     {id:'B',label:'B: número primo',pred:o=>[2,3,5].indexOf(o.i)>=0},
+     {id:'K',label:'C: impar y ceca',pred:o=>o.m==='X'&&o.i%2===1}],
+    'S = {C,X} × {1,…,6} — 12 resultados equiprobables');})()},
+
+/* ───────────── 6 ───────────── */
+{id:"ej6",g:G1,titulo:"6. 900 profesionales",tema:"Conteo · inclusión-exclusión",
+ enunciado:`En un estudio con $900$ profesionales, $25$ años después de su graduación, $300$ tuvieron éxito
+ profesional, $300$ se radicaron en el extranjero y $100$ tuvieron éxito y se radicaron en el extranjero.
+ Hallar cuántas personas del grupo hicieron: (a) exactamente dos de estas dos cosas, (b) por lo menos una,
+ (c) no más de una.`,
+ resultado:`(a) $100$ &nbsp;·&nbsp; (b) $500$ &nbsp;·&nbsp; (c) $800$`,
+ pasos:[
+  {t:"Nombrar los eventos",h:"Sean $E$ = «tuvo éxito profesional» y $R$ = «se radicó en el extranjero», con $|E|=300$, $|R|=300$, $|E\\cap R|=100$ sobre un total de $900$."},
+  {t:"(a) Con dos atributos, «exactamente dos» = ambos",h:"No hay un tercer atributo, así que hacer «exactamente dos de estas dos cosas» es hacer las dos: $|E\\cap R|=100$."},
+  {t:"(b) Inclusión-exclusión",h:"$|E\\cup R|=300+300-100=500$. El $-100$ corrige el doble conteo: los 100 que hicieron ambas aparecen una vez en cada grupo de 300."},
+  {t:"(c) Complementar",h:"«No más de una» es lo contrario de «las dos»: $900-100=800$."},
+  {t:"Control de consistencia",h:"La partición completa es: sólo éxito $200$, sólo extranjero $200$, ambas $100$, ninguna $400$. Suman $900$. ✓"}],
+ sim:{controles:[{id:'e',label:'Con éxito profesional',min:0,max:900,step:10,val:300},
+                 {id:'r',label:'Radicados en el extranjero',min:0,max:900,step:10,val:300},
+                 {id:'b',label:'Ambas cosas',min:0,max:300,step:10,val:100}],
+  draw:function(ctx,W,H,p){
+    const N=900, b=Math.min(p.b,p.e,p.r), soloE=p.e-b, soloR=p.r-b, nada=N-soloE-soloR-b;
+    const cs=[{x:W/2-95,y:150,r:135,lab:'E — éxito',lx:W/2-215,ly:32},
+              {x:W/2+95,y:150,r:135,lab:'R — extranjero',lx:W/2+215,ly:32}];
+    ctx.fillStyle=C('--panel');RR(ctx,W/2-330,14,660,272,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.lineWidth=1;ctx.stroke();
+    region(ctx,W,H,cs,[true,false],alpha(C('--accent'),.30));
+    region(ctx,W,H,cs,[false,true],alpha(C('--warn'),.30));
+    region(ctx,W,H,cs,[true,true],alpha(C('--accent2'),.45));
+    outlines(ctx,cs);
+    T(ctx,soloE,W/2-160,155,{s:24,b:1,a:'center'}); T(ctx,'sólo E',W/2-160,176,{s:11.5,a:'center',col:'--muted'});
+    T(ctx,b,W/2,155,{s:24,b:1,a:'center'});         T(ctx,'ambas',W/2,176,{s:11.5,a:'center',col:'--muted'});
+    T(ctx,soloR,W/2+160,155,{s:24,b:1,a:'center'}); T(ctx,'sólo R',W/2+160,176,{s:11.5,a:'center',col:'--muted'});
+    T(ctx,'ninguna: '+nada,W/2-315,275,{s:13,col:'--muted'});
+    if(nada<0)T(ctx,'⚠ combinación imposible: los subtotales superan 900',W/2,306,{s:13,a:'center',col:'--bad',b:1});
+    return {"(a) exactamente dos":b,"(b) por lo menos una":soloE+soloR+b,"(c) no más de una":N-b,"ninguna":nada};
+  }}},
+
+/* ───────────── 7 ───────────── */
+{id:"ej7",g:G2,titulo:"7. Dado cargado",tema:"Asignación de probabilidades · normalización",
+ enunciado:`Se carga un dado de manera que los números pares tienen el doble de probabilidad de salir que
+ los impares; los pares son igualmente probables entre sí, y lo mismo sucede con los impares. Se arroja el
+ dado una vez. Hallar la probabilidad de que: (a) aparezca un número par; (b) aparezca un número impar;
+ (c) aparezca un número primo impar.`,
+ resultado:`Con $P(\\text{impar})=\\tfrac19$ y $P(\\text{par})=\\tfrac29$ por cara:
+ (a) $\\tfrac23\\approx0{,}6667$ &nbsp;·&nbsp; (b) $\\tfrac13$ &nbsp;·&nbsp; (c) $\\tfrac29\\approx0{,}2222$`,
+ pasos:[
+  {t:"Poner una incógnita",h:"Sea $p$ la probabilidad de cada número impar. Por hipótesis cada par vale $2p$, y dentro de cada grupo son equiprobables."},
+  {t:"Normalizar",h:"La suma sobre todo el espacio debe dar 1: $3p+3(2p)=9p=1$, luego $p=\\tfrac19$. Es decir $P(1)=P(3)=P(5)=\\tfrac19$ y $P(2)=P(4)=P(6)=\\tfrac29$."},
+  {t:"(a) y (b)",h:"$P(\\text{par})=3\\cdot\\tfrac29=\\tfrac69=\\tfrac23$. Y por complemento $P(\\text{impar})=1-\\tfrac23=\\tfrac13$ — no hace falta volver a sumar."},
+  {t:"(c) Cuidado con el 1",h:"Los primos del dado son $2,3,5$; los impares entre ellos son $3$ y $5$, porque $1$ no es primo. Entonces $P=\\tfrac19+\\tfrac19=\\tfrac29$."}],
+ sim:{controles:[{id:'r',label:'Cuántas veces más probable es un par',min:1,max:6,step:1,val:2}],
+  draw:function(ctx,W,H,p){
+    const r=p.r, q=1/(3+3*r), P=[q,r*q,q,r*q,q,r*q];
+    const L=70,B=H-52,bw=(W-2*L)/6, maxP=Math.max.apply(null,P);
+    ctx.strokeStyle=C('--line');ctx.lineWidth=1;
+    for(let g=0;g<=4;g++){const y=B-(B-40)*g/4;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-L,y);ctx.stroke();
+      T(ctx,(maxP*g/4).toFixed(2),L-10,y+4,{s:11,a:'right',col:'--muted'});}
+    P.forEach((v,i)=>{
+      const h=(B-40)*v/maxP, x=L+i*bw+bw*0.18, w=bw*0.64, par=(i+1)%2===0;
+      ctx.fillStyle=par?alpha(C('--accent'),.85):alpha(C('--warn'),.85);
+      RR(ctx,x,B-h,w,h,5);ctx.fill();
+      T(ctx,(i+1),x+w/2,B+20,{s:15,b:1,a:'center'});
+      T(ctx,v.toFixed(4),x+w/2,B-h-8,{s:11.5,a:'center',col:'--muted'});
+      T(ctx,par?'par':'impar',x+w/2,B+36,{s:10.5,a:'center',col:'--muted'});});
+    T(ctx,'Azul = pares (probabilidad '+r+'×)   ·   Naranja = impares.   Los primos impares son 3 y 5 (el 1 no es primo).',
+      L,26,{s:12,col:'--muted'});
+    return {"P(par)":(3*r*q).toFixed(4),"P(impar)":(3*q).toFixed(4),
+            "P(primo impar)":(2*q).toFixed(4),"Suma":( 3*q+3*r*q).toFixed(4)};
+  }}},
+
+/* ───────────── 8 ───────────── */
+{id:"ej8",g:G2,titulo:"8. Dos rifas idénticas",tema:"Sumar vs. complementar · eventos no excluyentes",
+ enunciado:`En cada una de dos rifas idénticas $I$ y $II$ se premiará al poseedor de los números
+ $1,2,\\ldots,100$. $A$ tiene los números $56$ y $80$ de la rifa $I$, y $B$ tiene el $16$ de la $I$ y el
+ $33$ de la $II$. ¿Quién tiene mayor probabilidad de ganar?`,
+ resultado:`$P(A)=\\tfrac{2}{100}=0{,}0200$ y $P(B)=1-(\\tfrac{99}{100})^2=0{,}0199$: gana $A$,
+ por una diferencia de $10^{-4}$.`,
+ pasos:[
+  {t:"Los dos números de A están en la misma rifa",h:"Como la rifa $I$ premia un solo número, «sale el 56» y «sale el 80» son <b>incompatibles</b>: no pueden pasar juntos. Por eso acá sí se suman: $P(A)=\\tfrac1{100}+\\tfrac1{100}=0{,}0200$."},
+  {t:"Los de B están en rifas distintas",h:"Ahora los eventos son independientes pero <b>no</b> incompatibles: $B$ podría ganar las dos rifas. Sumar $\\tfrac1{100}+\\tfrac1{100}$ sería un error."},
+  {t:"Complementar",h:"$P(B)=1-P(\\text{no gana en }I)P(\\text{no gana en }II)=1-(\\tfrac{99}{100})^2=1-0{,}9801=0{,}0199$."},
+  {t:"Dónde está la diferencia",h:"$P(A)-P(B)=10^{-4}$, que es exactamente $P(B\\text{ gana las dos rifas})=\\tfrac1{100}\\cdot\\tfrac1{100}$. Es la porción que la suma ingenua contaría dos veces. Gana $A$, aunque por muy poco."},
+  {t:"Generalizando",h:"Con $N$ números por rifa, $P(A)=\\tfrac2N$ y $P(B)=\\tfrac2N-\\tfrac1{N^2}$. La ventaja de $A$ es siempre $1/N^2$ y se desvanece rápido: mové el slider."}],
+ sim:{controles:[{id:'N',label:'Números por rifa (N)',min:4,max:300,step:1,val:100}],
+  draw:function(ctx,W,H,p){
+    const N=p.N, PA=2/N, PB=1-Math.pow(1-1/N,2), mx=Math.max(PA,PB)*1.35;
+    bar(ctx,90,80,W-190,26,PA/mx,'--accent','A — dos números de la rifa I  (eventos incompatibles → se suman)',PA.toFixed(6));
+    bar(ctx,90,160,W-190,26,PB/mx,'--accent2','B — un número en cada rifa  (independientes, NO incompatibles → complemento)',PB.toFixed(6));
+    const dx=90+(W-190)*PB/mx, dw=(W-190)*(PA-PB)/mx;
+    ctx.fillStyle=alpha(C('--bad'),.75);RR(ctx,dx,80,Math.max(1.5,dw),26,3);ctx.fill();
+    T(ctx,'← esta franja roja es la ventaja de A: 1/N² = P(B gana las DOS rifas)',90,232,{s:12.5,col:'--muted'});
+    T(ctx,'Diferencia = '+(PA-PB).toExponential(2)+'   ·   Con N grande la ventaja se vuelve despreciable, pero nunca se invierte.',
+      90,258,{s:12.5,col:'--muted'});
+    T(ctx,'Gana con mayor probabilidad: A',90,300,{s:16,b:1,col:'--accent'});
+    return {"P(A)":PA.toFixed(6),"P(B)":PB.toFixed(6),"Diferencia":(PA-PB).toExponential(2),"1/N²":(1/(N*N)).toExponential(2)};
+  }}},
+
+/* ───────────── 9 ───────────── */
+{id:"ej9",g:G2,titulo:"9. El problema de Monty Hall",tema:"Información condicional · Monte Carlo",
+ enunciado:`Suponga que participa en un espectáculo de concurso y se le da a elegir entre tres puertas.
+ Tras una de ellas hay un coche y tras las otras hay cabras. Usted elige una puerta al azar y el conductor
+ del espectáculo, conocedor de lo que hay tras las tres puertas, abre otra, que tiene una cabra; entonces
+ él pregunta si quiere usted abrir la otra puerta. (a) ¿Debe usted cambiar la elección? (b) ¿Cuál es la
+ probabilidad de ganar el coche si lo hace? (c) ¿Y si no lo hace?`,
+ resultado:`(a) Sí, conviene cambiar. &nbsp;·&nbsp; (b) $\\tfrac23\\approx0{,}6667$ &nbsp;·&nbsp;
+ (c) $\\tfrac13\\approx0{,}3333$`,
+ pasos:[
+  {t:"La hipótesis clave",h:"El conductor <b>sabe</b> dónde está el coche y abre siempre una puerta con cabra distinta de la elegida. Su acción no es aleatoria: eso es lo que hace funcionar todo el argumento."},
+  {t:"Partir según la elección inicial",h:"La primera elección acierta con probabilidad $\\tfrac13$ y falla con $\\tfrac23$. Estos dos casos son exhaustivos y excluyentes, así que basta analizarlos por separado."},
+  {t:"Caso «acerté al principio» (1/3)",h:"Detrás de las otras dos hay cabras; el conductor abre cualquiera y, al cambiar, me quedo con la otra cabra. <b>Pierdo</b>."},
+  {t:"Caso «fallé al principio» (2/3)",h:"Quedan el coche y la otra cabra. El conductor <b>está obligado</b> a abrir la cabra, así que la puerta que deja cerrada es el coche. Al cambiar, <b>gano</b>. Por lo tanto $P(\\text{ganar}\\mid\\text{cambia})=\\tfrac23$."},
+  {t:"Por qué no es 1/2",h:"La tentación es decir «quedan dos puertas». El error es suponer que la puerta abierta se eligió al azar. Como el conductor nunca revela el coche, transfiere toda la probabilidad de las dos puertas no elegidas a la única que deja cerrada. Si abriera al azar y saliera cabra de casualidad, ahí sí sería $\\tfrac12$."}],
+ sim:{controles:[],
+  acciones:[{label:'Jugar 1000 partidas',fn:function(st,paint){
+      st.h=st.h||[];
+      for(let k=0;k<1000;k++){
+        const car=Math.floor(Math.random()*3), pick=Math.floor(Math.random()*3);
+        const opts=[0,1,2].filter(d=>d!==pick&&d!==car);
+        const host=opts[Math.floor(Math.random()*opts.length)];
+        const other=[0,1,2].filter(d=>d!==pick&&d!==host)[0];
+        st.nc=(st.nc||0)+(pick===car?1:0);
+        st.sc=(st.sc||0)+(other===car?1:0);
+        st.n=(st.n||0)+1;
+        if(st.n%25===0)st.h.push([st.sc/st.n,st.nc/st.n]);
+      } paint();}},
+    {label:'Reiniciar',fn:function(st,paint){st.n=st.sc=st.nc=0;st.h=[];paint();}}],
+  draw:function(ctx,W,H,p,st){
+    const n=st.n||0, sc=(st.sc||0), nc=(st.nc||0);
+    const fs=n?sc/n:0, fn2=n?nc/n:0;
+    bar(ctx,150,66,W-300,26,fs,'--accent2','CAMBIA de puerta',n?fs.toFixed(4):'—');
+    bar(ctx,150,126,W-300,26,fn2,'--warn','NO cambia',n?fn2.toFixed(4):'—');
+    ctx.setLineDash([5,5]);ctx.strokeStyle=C('--muted');ctx.lineWidth=1;
+    [2/3,1/3].forEach((v,i)=>{const x=150+(W-300)*v;
+      ctx.beginPath();ctx.moveTo(x,58+i*60);ctx.lineTo(x,100+i*60);ctx.stroke();});
+    ctx.setLineDash([]);
+    T(ctx,'teórico 2/3',150+(W-300)*2/3,52,{s:11,a:'center',col:'--muted'});
+    T(ctx,'teórico 1/3',150+(W-300)/3,112,{s:11,a:'center',col:'--muted'});
+    const gx=150,gy=180,gw=W-300,gh=110;
+    ctx.strokeStyle=C('--line');ctx.lineWidth=1;ctx.strokeRect(gx,gy,gw,gh);
+    [1/3,2/3].forEach(v=>{const y=gy+gh*(1-v);ctx.setLineDash([4,4]);ctx.beginPath();
+      ctx.moveTo(gx,y);ctx.lineTo(gx+gw,y);ctx.stroke();ctx.setLineDash([]);
+      T(ctx,v.toFixed(3),gx-8,y+4,{s:10.5,a:'right',col:'--muted'});});
+    const h=st.h||[];
+    if(h.length>1){[0,1].forEach(k=>{
+      ctx.strokeStyle=C(k?'--warn':'--accent2');ctx.lineWidth=2;ctx.beginPath();
+      h.forEach((v,i)=>{const x=gx+gw*i/(h.length-1), y=gy+gh*(1-v[k]);
+        i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();});}
+    T(ctx,n?('Convergencia de la frecuencia relativa — '+n+' partidas simuladas')
+           :'Apretá «Jugar 1000 partidas» para simular.',gx,gy+gh+22,{s:12,col:'--muted'});
+    return {"Partidas":n,"Gana cambiando":n?fs.toFixed(4):'—',"Gana sin cambiar":n?fn2.toFixed(4):'—',
+            "Teórico":"0,6667  vs  0,3333"};
+  }}},
+
+/* ───────────── 10 ───────────── */
+{id:"ej10",g:G2,titulo:"10. Probabilidades en función de x, y, z",tema:"De Morgan · aditividad",
+ enunciado:`Supóngase que $P(A)=x$, $P(B)=y$, $P(A\\cap B)=z$. Expresar en términos de $x$, $y$, $z$:
+ (a) $P(A^c\\cap B^c)$, (b) $P(A^c\\cap B)$, (c) $P(A^c\\cup B^c)$.`,
+ resultado:`(a) $1-x-y+z$ &nbsp;·&nbsp; (b) $y-z$ &nbsp;·&nbsp; (c) $1-z$`,
+ pasos:[
+  {t:"Lo primero: P(A ∪ B)",h:"Por inclusión-exclusión, $P(A\\cup B)=x+y-z$. Casi todo lo demás sale de ahí."},
+  {t:"(a) De Morgan",h:"$A^c\\cap B^c=(A\\cup B)^c$, así que $P(A^c\\cap B^c)=1-(x+y-z)=1-x-y+z$."},
+  {t:"(b) Partir B en dos trozos disjuntos",h:"$B=(A\\cap B)\\cup(A^c\\cap B)$, y los dos trozos no se solapan. Entonces $P(A^c\\cap B)=P(B)-P(A\\cap B)=y-z$."},
+  {t:"(c) De Morgan otra vez",h:"$A^c\\cup B^c=(A\\cap B)^c$, luego $P(A^c\\cup B^c)=1-z$."},
+  {t:"La receta común",h:"Los tres incisos usan la misma idea: llevar la expresión a un complemento o a una diferencia de conjuntos encajados, para poder aplicar $P(S^c)=1-P(S)$ o la aditividad sobre disjuntos. Nunca hace falta conocer $A$ y $B$."}],
+ sim:{controles:[{id:'x',label:'x = P(A)',min:0,max:100,step:1,val:55},
+                 {id:'y',label:'y = P(B)',min:0,max:100,step:1,val:45},
+                 {id:'z',label:'z = P(A ∩ B)',min:0,max:100,step:1,val:20},
+                 {id:'q',tipo:'select',label:'Resaltar',val:0,
+                  opts:['(a) Aᶜ ∩ Bᶜ','(b) Aᶜ ∩ B','(c) Aᶜ ∪ Bᶜ','A ∩ B']}],
+  draw:function(ctx,W,H,p){
+    const x=p.x/100, y=p.y/100, z=Math.min(p.z/100,p.x/100,p.y/100);
+    const cs=[{x:W/2-88,y:150,r:128,lab:'A',lx:W/2-215,ly:38},
+              {x:W/2+88,y:150,r:128,lab:'B',lx:W/2+215,ly:38}];
+    ctx.fillStyle=C('--panel');RR(ctx,W/2-320,16,640,270,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    const hi=alpha(C('--accent'),.42), lo=alpha(C('--line'),.55);
+    const masks={0:[[false,false]],1:[[false,true]],2:[[false,false],[true,false],[false,true]],3:[[true,true]]};
+    [[true,false],[false,true],[true,true],[false,false]].forEach(m=>{
+      const on=masks[p.q].some(k=>k[0]===m[0]&&k[1]===m[1]);
+      region(ctx,W,H,cs,m,on?hi:lo);});
+    outlines(ctx,cs);
+    T(ctx,'x−z = '+(x-z).toFixed(2),W/2-155,158,{s:14,b:1,a:'center'});
+    T(ctx,'z = '+z.toFixed(2),W/2,158,{s:14,b:1,a:'center'});
+    T(ctx,'y−z = '+(y-z).toFixed(2),W/2+155,158,{s:14,b:1,a:'center'});
+    T(ctx,'fuera: 1−x−y+z = '+(1-x-y+z).toFixed(2),W/2-305,276,{s:12.5,col:'--muted'});
+    const lbl=['(a) P(Aᶜ ∩ Bᶜ) = 1 − x − y + z','(b) P(Aᶜ ∩ B) = y − z','(c) P(Aᶜ ∪ Bᶜ) = 1 − z','P(A ∩ B) = z'][p.q];
+    T(ctx,lbl,W/2,318,{s:15.5,b:1,a:'center',col:'--accent'});
+    return {"(a) 1−x−y+z":(1-x-y+z).toFixed(4),"(b) y−z":(y-z).toFixed(4),
+            "(c) 1−z":(1-z).toFixed(4),"P(A ∪ B)":(x+y-z).toFixed(4)};
+  }}},
+
+/* ───────────── 11 ───────────── */
+{id:"ej11",g:G2,titulo:"11. Metro, autobús y coche",tema:"Venn de tres · regiones disjuntas",
+ enunciado:`Durante un año las personas de una ciudad utilizan tres tipos de transporte: metro ($M$),
+ autobús ($A$) y coche particular ($C$). Sólo metro $=0{,}30$; sólo autobús $=0{,}20$; sólo coche $=0{,}15$;
+ sólo metro y autobús $=0{,}10$; sólo metro y coche $=0{,}05$; sólo autobús y coche $=0{,}06$;
+ metro, autobús y coche $=0{,}01$. Calcular la probabilidad de que una persona:
+ (a) tome al menos dos medios; (b) viaje en metro y no en autobús; (c) viaje en metro o en coche y no en
+ autobús; (d) viaje en metro o en autobús y en coche; (e) vaya a pie.`,
+ resultado:`(a) $0{,}22$ &nbsp;·&nbsp; (b) $0{,}35$ &nbsp;·&nbsp; (c) $0{,}50$ &nbsp;·&nbsp;
+ (d) $0{,}12$ &nbsp;·&nbsp; (e) $0{,}13$`,
+ pasos:[
+  {t:"Los datos ya vienen desagregados",h:"La palabra «sólo» es la clave: los siete números corresponden a las siete <b>regiones disjuntas</b> del diagrama de Venn, no a los eventos completos. Eso es una ventaja enorme."},
+  {t:"Por qué facilita todo",h:"Al ser incompatibles entre sí, cualquier pregunta se responde sumando las regiones que correspondan — sin inclusión-exclusión, sin correcciones."},
+  {t:"(a) Al menos dos medios",h:"Son las tres intersecciones dobles más la triple: $0{,}10+0{,}05+0{,}06+0{,}01=0{,}22$."},
+  {t:"(b) y (c): quitar el autobús",h:"«Metro y no autobús» = sólo $M$ + sólo $M\\cap C$ = $0{,}35$. Para (c) se agrega «sólo coche»: $0{,}30+0{,}15+0{,}05=0{,}50$."},
+  {t:"(d) y (e)",h:"$(M\\cup A)\\cap C$ son las regiones de $C$ que tocan a $M$ o a $A$: $0{,}05+0{,}06+0{,}01=0{,}12$. Y como las siete regiones suman $0{,}87$, va a pie el $1-0{,}87=0{,}13$."}],
+ sim:{controles:[{id:'q',tipo:'select',label:'Inciso',val:0,
+   opts:['(a) al menos dos medios','(b) metro y no autobús','(c) (metro o coche) y no autobús',
+         '(d) (metro o autobús) y coche','(e) va a pie']}],
+  draw:function(ctx,W,H,p){
+    const cx=W/2, cy=152, R=104;
+    const cs=[{x:cx-62,y:cy-32,r:R,lab:'M metro',lx:cx-176,ly:34},
+              {x:cx+62,y:cy-32,r:R,lab:'A autobús',lx:cx+176,ly:34},
+              {x:cx,y:cy+68,r:R,lab:'C coche',lx:cx,ly:cy+206}];
+    // regiones: [M,A,C] -> valor
+    const REG=[{m:[1,0,0],v:.30,lx:cx-118,ly:cy-52},{m:[0,1,0],v:.20,lx:cx+118,ly:cy-52},
+               {m:[0,0,1],v:.15,lx:cx,ly:cy+128},{m:[1,1,0],v:.10,lx:cx,ly:cy-64},
+               {m:[1,0,1],v:.05,lx:cx-66,ly:cy+52},{m:[0,1,1],v:.06,lx:cx+66,ly:cy+52},
+               {m:[1,1,1],v:.01,lx:cx,ly:cy+16}];
+    const SEL=[[3,4,5,6],[0,4],[0,2,4],[4,5,6],[]][p.q];
+    ctx.fillStyle=C('--panel');RR(ctx,cx-300,10,600,300,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    if(p.q===4){region(ctx,W,H,cs,[false,false,false],alpha(C('--accent'),.35));}
+    REG.forEach((r,i)=>region(ctx,W,H,cs,r.m.map(Boolean),
+      SEL.indexOf(i)>=0?alpha(C('--accent'),.48):alpha(C('--line'),.5)));
+    outlines(ctx,cs);
+    REG.forEach((r,i)=>{const on=SEL.indexOf(i)>=0;
+      T(ctx,r.v.toFixed(2),r.lx,r.ly,{s:on?15:13,b:on,a:'center',col:on?'--ink':'--muted'});});
+    T(ctx,'a pie: 0,13',cx-292,300,{s:13,b:p.q===4,col:p.q===4?'--accent':'--muted'});
+    const val=[.22,.35,.50,.12,.13][p.q];
+    const txt=['0,10 + 0,05 + 0,06 + 0,01','0,30 + 0,05','0,30 + 0,15 + 0,05','0,05 + 0,06 + 0,01','1 − 0,87'][p.q];
+    T(ctx,txt+'  =  '+val.toFixed(2).replace('.',','),cx,338,{s:16,b:1,a:'center',col:'--accent'});
+    return {"Resultado":val.toFixed(2).replace('.',','),"Suma de las 7 regiones":"0,87","Va a pie":"0,13"};
+  }}},
+
+/* ───────────── 12 ───────────── */
+{id:"ej12",g:G2,titulo:"12. Punto al azar sobre un segmento",tema:"Probabilidad geométrica · Monte Carlo",
+ enunciado:`Se escoge al azar un punto $X$ sobre un segmento de recta $AB$ con punto medio $O$. Hallar la
+ probabilidad de que los segmentos de recta $AX$, $XB$ y $AO$ puedan formar un triángulo.
+ <i>(Propiedad triangular: en todo triángulo un lado es menor que la suma de los otros dos y mayor que su
+ diferencia.)</i>`,
+ resultado:`El punto sirve si y sólo si $\\tfrac14<\\tfrac{AX}{AB}<\\tfrac34$, de modo que $P=\\tfrac12$.`,
+ pasos:[
+  {t:"Normalizar y modelar",h:"Tomamos $AB=1$, con lo cual $AO=\\tfrac12$. El punto se elige «al azar»: eso significa uniforme en $[0,1]$, y entonces <b>la probabilidad de un conjunto es su longitud</b> (probabilidad geométrica)."},
+  {t:"Nombrar los tres lados",h:"Con $t=AX$, los tres segmentos miden $t$, $1-t$ y $\\tfrac12$. Hay que ver para qué $t$ forman triángulo."},
+  {t:"Escribir las tres desigualdades",h:"$t+(1-t)>\\tfrac12$ se cumple siempre. $t+\\tfrac12>1-t$ da $t>\\tfrac14$. Y $(1-t)+\\tfrac12>t$ da $t<\\tfrac34$."},
+  {t:"Medir el conjunto favorable",h:"Queda el intervalo $\\left(\\tfrac14,\\tfrac34\\right)$, de longitud $\\tfrac12$. Como el total mide 1, $P=\\tfrac12$."},
+  {t:"Por qué el resultado es simétrico",h:"La condición $\\tfrac14<t<\\tfrac34$ es simétrica respecto de $t=\\tfrac12$, y tenía que serlo: intercambiar $AX$ con $XB$ no cambia si forman triángulo. El punto sirve exactamente cuando cae en la mitad central."}],
+ sim:{controles:[{id:'t',label:'Posición de X (× 1/100 de AB)',min:0,max:100,step:1,val:62}],
+  acciones:[{label:'Sortear 300 puntos',fn:function(st,paint){
+      st.pts=st.pts||[];for(let k=0;k<300;k++)st.pts.push(Math.random());
+      st.ok=st.pts.filter(t=>t>.25&&t<.75).length;paint();}},
+    {label:'Reiniciar',fn:function(st,paint){st.pts=[];st.ok=0;paint();}}],
+  draw:function(ctx,W,H,p,st){
+    const t=p.t/100, L=90, R=W-90, y=118, xs=u=>L+(R-L)*u;
+    ctx.fillStyle=alpha(C('--accent2'),.20);
+    ctx.fillRect(xs(.25),y-32,xs(.75)-xs(.25),64);
+    ctx.strokeStyle=C('--accent2');ctx.setLineDash([4,4]);ctx.lineWidth=1.4;
+    [.25,.75].forEach(u=>{ctx.beginPath();ctx.moveTo(xs(u),y-32);ctx.lineTo(xs(u),y+32);ctx.stroke();});
+    ctx.setLineDash([]);
+    ctx.strokeStyle=C('--ink');ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();
+    [[0,'A'],[.5,'O'],[1,'B']].forEach(k=>{
+      ctx.fillStyle=C('--ink');ctx.beginPath();ctx.arc(xs(k[0]),y,4.5,0,7);ctx.fill();
+      T(ctx,k[1],xs(k[0]),y+30,{s:14,b:1,a:'center'});});
+    T(ctx,'1/4',xs(.25),y-42,{s:11.5,a:'center',col:'--accent2'});
+    T(ctx,'3/4',xs(.75),y-42,{s:11.5,a:'center',col:'--accent2'});
+    const ok=t>.25&&t<.75;
+    ctx.fillStyle=C(ok?'--accent2':'--bad');ctx.beginPath();ctx.arc(xs(t),y,8,0,7);ctx.fill();
+    T(ctx,'X',xs(t),y-18,{s:13,b:1,a:'center',col:ok?'--accent2':'--bad'});
+    // los tres lados
+    const sy=196, seg=(x0,w,c,lab)=>{ctx.strokeStyle=C(c);ctx.lineWidth=7;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x0,sy);ctx.lineTo(x0+w,sy);ctx.stroke();ctx.lineCap='butt';
+      T(ctx,lab,x0+w/2,sy+24,{s:12,a:'center',col:'--muted'});};
+    const u=(R-L);
+    seg(L,u*t,'--accent','AX = '+t.toFixed(2));
+    seg(L+u*t+22,u*(1-t),'--warn','XB = '+(1-t).toFixed(2));
+    seg(L+u+44,u*.5,'--muted','AO = 0,50');
+    T(ctx,ok?'✓ Los tres segmentos forman triángulo':'✗ No forman triángulo — un lado supera la suma de los otros dos',
+      W/2,264,{s:15.5,b:1,a:'center',col:ok?'--accent2':'--bad'});
+    const n=(st.pts||[]).length;
+    T(ctx, n? ('Simulación: '+n+' puntos sorteados · frecuencia en la zona favorable = '+(st.ok/n).toFixed(4)+'  (teórico 0,5000)')
+            : 'Movés X con el slider, o sorteás puntos al azar con el botón.',
+      W/2,306,{s:12.5,a:'center',col:'--muted'});
+    return {"AX / AB":t.toFixed(2),"¿Forma triángulo?":ok?'Sí':'No',
+            "Zona favorable":"(0,25 ; 0,75)","P teórica":"0,5000",
+            "Frecuencia simulada":n?(st.ok/n).toFixed(4):'—'};
+  }}},
+
+/* ───────────── 13 ───────────── */
+{id:"ej13",g:G3,titulo:"13. Sistema de 10 componentes",tema:"Cota de Boole · demostración",
+ enunciado:`Un sistema de control está formado por $10$ componentes. La falla de cualquiera de ellos provoca
+ la del sistema. Se sabe que la probabilidad de falla de cada componente es $<0{,}0002$. Probar que la
+ probabilidad de que el sistema funcione es $>0{,}998$.`,
+ resultado:`$P\\!\\left(\\bigcup F_i\\right)\\le\\sum P(F_i)<10\\times0{,}0002=0{,}002$, luego
+ $P(\\text{funciona})>0{,}998$. &nbsp;$\\blacksquare$`,
+ pasos:[
+  {t:"Modelar la falla del sistema",h:"Sea $F_i$ = «falla el componente $i$». El sistema está en serie: falla si falla <b>alguno</b>, así que el evento de falla es $\\bigcup_{i=1}^{10}F_i$."},
+  {t:"No suponer independencia",h:"El enunciado no la da, y no hace falta. La herramienta correcta es la subaditividad (cota de Boole), que vale sea cual sea la dependencia entre componentes."},
+  {t:"Aplicar la cota",h:"$P\\!\\left(\\bigcup_{i=1}^{10}F_i\\right)\\le\\sum_{i=1}^{10}P(F_i)<10\\times0{,}0002=0{,}002$."},
+  {t:"Pasar al complemento",h:"$P(\\text{funciona})=1-P(\\text{falla})>1-0{,}002=0{,}998$. $\\blacksquare$"},
+  {t:"Qué tan grosera es la cota",h:"Si además hubiera independencia, $P(\\text{funciona})>(1-0{,}0002)^{10}=0{,}998002$: apenas mejor. La cota de Boole alcanza de sobra para lo pedido, y no exige hipótesis extra."}],
+ sim:{controles:[{id:'n',label:'Cantidad de componentes',min:1,max:60,step:1,val:10},
+                 {id:'q',label:'P(falla) por componente × 10⁻⁴',min:1,max:30,step:1,val:2}],
+  draw:function(ctx,W,H,p){
+    const n=p.n, q=p.q/10000;
+    const boole=Math.min(1,n*q), indep=1-Math.pow(1-q,n);
+    bar(ctx,120,80,W-240,26,boole/0.02,'--warn','Cota de Boole para P(falla): n · q  (sin suponer nada)',boole.toFixed(6));
+    bar(ctx,120,148,W-240,26,indep/0.02,'--accent','Valor exacto si hubiera independencia: 1 − (1−q)ⁿ',indep.toFixed(6));
+    T(ctx,'P(el sistema funciona)  >  '+(1-boole).toFixed(6),120,232,{s:19,b:1,col:'--accent2'});
+    T(ctx,'La cota de Boole sobreestima la falla, y por eso da una garantía válida: si con ella alcanza, con la realidad también.',
+      120,266,{s:12.5,col:'--muted'});
+    T(ctx,'Diferencia entre ambas: '+(boole-indep).toExponential(2)+
+      '  ·  con q chico y n moderado son casi indistinguibles.',120,290,{s:12.5,col:'--muted'});
+    if(n===10&&p.q===2)T(ctx,'← configuración del enunciado: la garantía es exactamente 0,998',120,320,{s:13,b:1,col:'--accent'});
+    return {"Cota de Boole":boole.toFixed(6),"Con independencia":indep.toFixed(6),
+            "Garantía P(funciona) >":(1-boole).toFixed(6)};
+  }}},
+
+/* ───────────── 14 ───────────── */
+{id:"ej14",g:G2,titulo:"14. Tres cartas y las coincidencias",tema:"Inclusión-exclusión · desarreglos",
+ enunciado:`Supongamos que tres cartas numeradas $1$, $2$, $3$ son alineadas al azar. Sean $A$ = «la carta
+ $1$ aparece en la primera posición» y $B$ = «la carta $2$ aparece en la segunda posición».
+ (a) Calcular $P(A)$ y $P(B)$. (b) ¿Cuál es la probabilidad de que haya al menos una coincidencia entre los
+ números de las cartas y las posiciones que ocupan?`,
+ resultado:`(a) $P(A)=P(B)=\\tfrac13$ &nbsp;·&nbsp; (b) $P(\\text{al menos una})=\\tfrac23\\approx0{,}6667$`,
+ pasos:[
+  {t:"(a) Fijar una carta",h:"Las $3!=6$ permutaciones son equiprobables. Si la carta 1 va en la primera posición, las otras dos se ordenan libremente: $2!=2$ casos. Luego $P(A)=\\tfrac{2}{6}=\\tfrac13$, e igual $P(B)$."},
+  {t:"(b) Agregar el tercer evento",h:"Sea $C$ = «la carta 3 en la tercera posición», también con $P=\\tfrac13$. Buscamos $P(A\\cup B\\cup C)$."},
+  {t:"Las intersecciones",h:"Si dos cartas están en su lugar, la tercera <b>queda forzada</b>. Por eso $P(A\\cap B)=P(A\\cap C)=P(B\\cap C)=\\tfrac16$, y también $P(A\\cap B\\cap C)=\\tfrac16$."},
+  {t:"Inclusión-exclusión",h:"$P(A\\cup B\\cup C)=3\\cdot\\tfrac13-3\\cdot\\tfrac16+\\tfrac16=1-\\tfrac12+\\tfrac16=\\tfrac23$."},
+  {t:"Verificación y generalización",h:"De las seis permutaciones, las únicas sin coincidencias (<i>desarreglos</i>) son $231$ y $312$: $\\tfrac26=\\tfrac13$ de ninguna, $\\tfrac23$ de al menos una. ✓ Para $n$ cartas el resultado tiende a $1-e^{-1}\\approx0{,}6321$: casi no depende de $n$."}],
+ sim:{controles:[{id:'n',label:'Cantidad de cartas (n)',min:2,max:12,step:1,val:3}],
+  draw:function(ctx,W,H,p){
+    const f=k=>{let r=1;for(let i=2;i<=k;i++)r*=i;return r;};
+    const P=k=>{let s=0;for(let i=0;i<=k;i++)s+=Math.pow(-1,i)/f(i);return 1-s;};
+    const L=70,R=W-40,T0=40,B=H-60, xs=k=>L+(R-L)*(k-2)/10, ys=v=>B-(B-T0)*v;
+    ctx.strokeStyle=C('--line');ctx.lineWidth=1;
+    for(let g=0;g<=4;g++){const y=ys(g/4);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();
+      T(ctx,(g/4).toFixed(2),L-10,y+4,{s:11,a:'right',col:'--muted'});}
+    const lim=1-Math.exp(-1);
+    ctx.setLineDash([6,5]);ctx.strokeStyle=C('--warn');ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(L,ys(lim));ctx.lineTo(R,ys(lim));ctx.stroke();ctx.setLineDash([]);
+    T(ctx,'1 − e⁻¹ = '+lim.toFixed(4),R,ys(lim)-9,{s:12,a:'right',col:'--warn'});
+    ctx.strokeStyle=C('--accent');ctx.lineWidth=2.5;ctx.beginPath();
+    for(let k=2;k<=12;k++){const x=xs(k),y=ys(P(k));k===2?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke();
+    for(let k=2;k<=12;k++){ctx.fillStyle=k===p.n?C('--accent2'):C('--accent');
+      ctx.beginPath();ctx.arc(xs(k),ys(P(k)),k===p.n?7:3.5,0,7);ctx.fill();
+      T(ctx,k,xs(k),B+20,{s:11,a:'center',col:'--muted'});}
+    T(ctx,'P = '+P(p.n).toFixed(4),xs(p.n),ys(P(p.n))-14,{s:13.5,b:1,a:'center',col:'--accent2'});
+    T(ctx,'P(al menos una coincidencia) en función de n — se estabiliza enseguida',L,26,{s:12.5,col:'--muted'});
+    T(ctx,'n (cartas)',(L+R)/2,H-14,{s:11.5,a:'center',col:'--muted'});
+    return {"n":p.n,"P(al menos una)":P(p.n).toFixed(4),"P(ningún acierto)":(1-P(p.n)).toFixed(4),
+            "Límite 1 − e⁻¹":lim.toFixed(4)};
+  }}},
+
+/* ───────────── 15 ───────────── */
+{id:"ej15",g:G2,titulo:"15. Interrupciones de un programa",tema:"Despejar la intersección · De Morgan",
+ enunciado:`En cierta computadora un programa funciona correctamente el $80\\%$ de las veces, el $15\\%$
+ interrumpe la ejecución por errores en el propio programa y el $9\\%$ de las veces se interrumpe por errores
+ en su entorno de trabajo; obviamente algunas veces deja de funcionar por ambas causas. Sea
+ $B$ = {la siguiente interrupción es por problemas propios del programa} y
+ $A$ = {la siguiente interrupción es por errores en el entorno de trabajo}.
+ Calcular $P(A^c\\cup B^c)$, $P(A^c\\cap B^c)$ y $P(A\\cap B^c)$.`,
+ resultado:`$P(A\\cap B)=0{,}04$; entonces $P(A^c\\cup B^c)=0{,}96$, $P(A^c\\cap B^c)=0{,}80$ y
+ $P(A\\cap B^c)=0{,}05$.`,
+ pasos:[
+  {t:"El dato que falta",h:"Los datos son $P(B)=0{,}15$, $P(A)=0{,}09$ y $P(\\text{funciona bien})=0{,}80$. Lo que <b>no</b> está dado es $P(A\\cap B)$: hay que deducirlo."},
+  {t:"Paso 1: la unión",h:"«Se interrumpe» es el complemento de «funciona correctamente», así que $P(A\\cup B)=1-0{,}80=0{,}20$."},
+  {t:"Paso 2: despejar la intersección",h:"De $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$ sale $P(A\\cap B)=0{,}09+0{,}15-0{,}20=0{,}04$. Notar que $0{,}24>0{,}20$: ese exceso <b>es</b> el solapamiento."},
+  {t:"Paso 3: las tres respuestas",h:"$P(A^c\\cup B^c)=1-P(A\\cap B)=0{,}96$; $P(A^c\\cap B^c)=1-P(A\\cup B)=0{,}80$; $P(A\\cap B^c)=P(A)-P(A\\cap B)=0{,}05$."},
+  {t:"Control",h:"$P(A^c\\cap B^c)=0{,}80$ debe coincidir con la probabilidad de que el programa funcione correctamente. Y coincide. ✓"}],
+ sim:{controles:[{id:'ok',label:'P(funciona correctamente) × 100',min:70,max:95,step:1,val:80},
+                 {id:'pb',label:'P(B) error del programa × 100',min:1,max:30,step:1,val:15},
+                 {id:'pa',label:'P(A) error del entorno × 100',min:1,max:30,step:1,val:9}],
+  draw:function(ctx,W,H,p){
+    const ok=p.ok/100, PA=p.pa/100, PB=p.pb/100, PU=1-ok, PI=PA+PB-PU;
+    const cs=[{x:W/2-70,y:150,r:110,lab:'A entorno',lx:W/2-196,ly:40},
+              {x:W/2+70,y:150,r:110,lab:'B programa',lx:W/2+196,ly:40}];
+    ctx.fillStyle=C('--panel');RR(ctx,W/2-290,14,580,272,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    region(ctx,W,H,cs,[false,false],alpha(C('--accent2'),.26));
+    region(ctx,W,H,cs,[true,false],alpha(C('--accent'),.32));
+    region(ctx,W,H,cs,[false,true],alpha(C('--warn'),.32));
+    region(ctx,W,H,cs,[true,true],alpha(C('--bad'),.5));
+    outlines(ctx,cs);
+    T(ctx,(PA-PI).toFixed(2),W/2-128,156,{s:17,b:1,a:'center'});
+    T(ctx,PI.toFixed(2),W/2,156,{s:17,b:1,a:'center'});
+    T(ctx,(PB-PI).toFixed(2),W/2+128,156,{s:17,b:1,a:'center'});
+    T(ctx,'funciona bien: '+(1-PU).toFixed(2),W/2-278,276,{s:13,col:'--muted'});
+    if(PI<0)T(ctx,'⚠ datos incompatibles: P(A)+P(B) < P(A∪B) exigiría intersección negativa',
+      W/2,312,{s:13.5,a:'center',b:1,col:'--bad'});
+    else T(ctx,'P(A∩B) = P(A) + P(B) − P(A∪B) = '+PA.toFixed(2)+' + '+PB.toFixed(2)+' − '+PU.toFixed(2)+' = '+PI.toFixed(2),
+      W/2,312,{s:14.5,a:'center',b:1,col:'--accent'});
+    return {"P(A∩B)":PI.toFixed(4),"P(Aᶜ∪Bᶜ)":(1-PI).toFixed(4),
+            "P(Aᶜ∩Bᶜ)":(1-PU).toFixed(4),"P(A∩Bᶜ)":(PA-PI).toFixed(4)};
+  }}},
+
+/* ───────────── 16 ───────────── */
+{id:"ej16",g:G3,titulo:"16. Desigualdad de Bonferroni",tema:"Demostración · cotas",
+ enunciado:`Probar que $P(A\\cap B)\\geq P(A)+P(B)-1$ (desigualdad de Bonferroni).`,
+ resultado:`De $P(A\\cup B)\\le 1$ en la fórmula de inclusión-exclusión. Hay igualdad si y sólo si
+ $P(A\\cup B)=1$. &nbsp;$\\blacksquare$`,
+ pasos:[
+  {t:"Partir de lo conocido",h:"Para dos eventos cualesquiera vale $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$. No hace falta ninguna hipótesis extra."},
+  {t:"Usar que toda probabilidad es ≤ 1",h:"Como $A\\cup B\\subseteq S$, se tiene $P(A\\cup B)\\le 1$. Sustituyendo: $P(A)+P(B)-P(A\\cap B)\\le 1$."},
+  {t:"Despejar",h:"$P(A\\cap B)\\ge P(A)+P(B)-1$. $\\blacksquare$ Toda la demostración es una línea, pero conviene ver de dónde sale cada paso."},
+  {t:"Cuándo vale la igualdad",h:"La única desigualdad usada fue $P(A\\cup B)\\le1$, así que hay igualdad exactamente cuando $P(A\\cup B)=1$, es decir cuando entre los dos cubren casi todo el espacio."},
+  {t:"Para qué sirve",h:"La cota es informativa sólo si $P(A)+P(B)>1$. Con $P(A)=0{,}95$ y $P(B)=0{,}97$ da $P(A\\cap B)\\ge0{,}92$: dos eventos muy probables tienen que ocurrir juntos con alta probabilidad, sin suponer independencia."}],
+ sim:{controles:[{id:'x',label:'P(A) × 100',min:0,max:100,step:1,val:95},
+                 {id:'y',label:'P(B) × 100',min:0,max:100,step:1,val:97}],
+  draw:function(ctx,W,H,p){
+    const x=p.x/100, y=p.y/100, lo=Math.max(0,x+y-1), hi=Math.min(x,y);
+    bar(ctx,110,72,W-220,22,x,'--accent','P(A)',x.toFixed(2));
+    bar(ctx,110,128,W-220,22,y,'--warn','P(B)',y.toFixed(2));
+    const L=110,R=W-110;
+    T(ctx,'Valores posibles de P(A ∩ B):',L,190,{s:12.5,col:'--muted'});
+    ctx.fillStyle=alpha(C('--line'),.8);RR(ctx,L,202,R-L,30,6);ctx.fill();
+    ctx.fillStyle=alpha(C('--accent2'),.55);RR(ctx,L+(R-L)*lo,202,(R-L)*(hi-lo),30,6);ctx.fill();
+    ctx.strokeStyle=C('--accent2');ctx.lineWidth=2;ctx.stroke();
+    T(ctx,'0',L,252,{s:11,a:'center',col:'--muted'});T(ctx,'1',R,252,{s:11,a:'center',col:'--muted'});
+    T(ctx,'≥ '+lo.toFixed(2),L+(R-L)*lo,196,{s:13,b:1,a:'center',col:'--accent2'});
+    T(ctx,'≤ '+hi.toFixed(2),L+(R-L)*hi,196,{s:13,b:1,a:'center',col:'--muted'});
+    T(ctx,'Bonferroni:  P(A∩B) ≥ P(A) + P(B) − 1 = '+x.toFixed(2)+' + '+y.toFixed(2)+' − 1 = '+lo.toFixed(2),
+      W/2,292,{s:15.5,b:1,a:'center',col:'--accent'});
+    T(ctx, x+y>1 ? 'La cota es informativa: obliga a que la intersección sea estrictamente positiva.'
+                 : 'Con P(A)+P(B) ≤ 1 la cota da ≤ 0 y no aporta nada: los eventos podrían ser disjuntos.',
+      W/2,322,{s:12.5,a:'center',col:'--muted'});
+    return {"Cota inferior":lo.toFixed(4),"Cota superior":hi.toFixed(4),
+            "P(A)+P(B)":(x+y).toFixed(2),"¿Informativa?":x+y>1?'Sí':'No'};
+  }}},
+
+/* ───────────── 17 ───────────── */
+{id:"ej17",g:G3,titulo:"17. Subaditividad y eventos casi seguros",tema:"Inducción · De Morgan",
+ enunciado:`Sean $E_1,\\ldots,E_n$ ($n\\geq2$) eventos cualesquiera de $S$.
+ (a) Probar que $P\\!\\left(\\bigcup_{i=1}^{n}E_i\\right)\\leq\\sum_{i=1}^{n}P(E_i)$.
+ (b) Probar que si cada $E_i$ es un evento casi seguro (es decir $P(E_i)=1$), entonces
+ $E_1\\cap\\cdots\\cap E_n$ es un evento casi seguro.`,
+ resultado:`(a) Inducción, con caso base $P(E_1\\cup E_2)\\le P(E_1)+P(E_2)$.
+ (b) $P\\big((\\bigcap E_i)^c\\big)=P(\\bigcup E_i^c)\\le\\sum P(E_i^c)=0$. &nbsp;$\\blacksquare$`,
+ pasos:[
+  {t:"(a) Caso base n = 2",h:"$P(E_1\\cup E_2)=P(E_1)+P(E_2)-P(E_1\\cap E_2)\\le P(E_1)+P(E_2)$, porque $P(E_1\\cap E_2)\\ge0$ por el axioma de no negatividad."},
+  {t:"(a) Paso inductivo",h:"Escribimos $\\bigcup_{i=1}^{n}E_i=\\left(\\bigcup_{i=1}^{n-1}E_i\\right)\\cup E_n$ y aplicamos el caso base, y después la hipótesis inductiva sobre los primeros $n-1$. $\\blacksquare$"},
+  {t:"(a) La idea en una línea",h:"Sumar las probabilidades cuenta más de una vez las zonas de solapamiento; por eso la suma nunca puede quedar por debajo de la probabilidad de la unión."},
+  {t:"(b) Pasar al complemento",h:"Por De Morgan, $\\left(\\bigcap E_i\\right)^c=\\bigcup E_i^c$. Como $P(E_i)=1$, resulta $P(E_i^c)=0$ para todo $i$."},
+  {t:"(b) Cerrar con la parte (a)",h:"$P\\left(\\bigcup E_i^c\\right)\\le\\sum P(E_i^c)=0$, y como toda probabilidad es $\\ge0$, tiene que ser $=0$. Luego $P\\left(\\bigcap E_i\\right)=1$. $\\blacksquare$ &nbsp;Ojo: esto vale para intersecciones finitas o numerables, no arbitrarias."}],
+ sim:{controles:[{id:'n',label:'Cantidad de eventos (n)',min:2,max:6,step:1,val:3},
+                 {id:'s',label:'Solapamiento entre ellos',min:0,max:100,step:1,val:45},
+                 {id:'p',label:'P(cada evento) × 100',min:5,max:60,step:1,val:30}],
+  draw:function(ctx,W,H,p){
+    const n=p.n, pe=p.p/100, s=p.s/100;
+    // modelo simple: la union va de max(pe) (todos iguales) a min(1, n*pe) (disjuntos)
+    const un=Math.min(1, pe + (n-1)*pe*(1-s)), suma=n*pe;
+    const cx=250, cy=150, R=78, sep=R*(1-s)*1.25;
+    const cs=[];for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;
+      cs.push({x:cx+Math.cos(a)*sep,y:cy+Math.sin(a)*sep,r:R,lab:'E'+(i+1),
+               lx:cx+Math.cos(a)*(sep+R+20),ly:cy+Math.sin(a)*(sep+R+20)+5});}
+    ctx.fillStyle=C('--panel');RR(ctx,60,20,380,270,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    cs.forEach(c=>{ctx.fillStyle=alpha(C('--accent'),.24);
+      ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.fill();});
+    outlines(ctx,cs);
+    T(ctx,'Cuanto más se solapan, más sobreestima la suma',60,308,{s:12,col:'--muted'});
+    const L=490,R2=W-50;
+    bar(ctx,L,86,R2-L,24,Math.min(1,suma),'--warn','Σ P(Eᵢ)  — suma de las probabilidades',suma.toFixed(3));
+    bar(ctx,L,150,R2-L,24,un,'--accent','P(∪ Eᵢ)  — probabilidad de la unión',un.toFixed(3));
+    ctx.fillStyle=alpha(C('--bad'),.35);
+    ctx.fillRect(L+(R2-L)*un,86,Math.max(0,(R2-L)*(Math.min(1,suma)-un)),24);
+    T(ctx,'La franja roja es lo que se cuenta de más:',L,206,{s:12.5,col:'--muted'});
+    T(ctx,'exceso = '+(suma-un).toFixed(3),L,228,{s:15,b:1,col:'--bad'});
+    T(ctx,'Siempre  P(∪ Eᵢ)  ≤  Σ P(Eᵢ)',L,272,{s:15.5,b:1,col:'--accent'});
+    T(ctx,'La igualdad vale sólo si son disjuntos dos a dos.',L,296,{s:12,col:'--muted'});
+    return {"Σ P(Eᵢ)":suma.toFixed(4),"P(∪ Eᵢ)":un.toFixed(4),
+            "Exceso":(suma-un).toFixed(4),"¿Se cumple la cota?":suma>=un-1e-9?'Sí':'—'};
+  }}},
+
+/* ───────────── 18 ───────────── */
+{id:"ej18",g:G3,titulo:"18. Que ocurra exactamente uno de dos eventos",tema:"Diferencia simétrica · demostración",
+ enunciado:`Dados dos eventos $A$ y $B$, mostrar que la probabilidad de que ocurran exactamente uno de ellos
+ es $P(A)+P(B)-2P(A\\cap B)$.`,
+ resultado:`$A\\triangle B=(A\\cap B^c)\\cup(A^c\\cap B)$, unión disjunta, y cada término vale
+ $P(A)-P(A\\cap B)$ y $P(B)-P(A\\cap B)$. &nbsp;$\\blacksquare$`,
+ pasos:[
+  {t:"Escribir el evento",h:"«Exactamente uno» significa: ocurre $A$ y no $B$, <b>o bien</b> ocurre $B$ y no $A$. Es la diferencia simétrica $A\\triangle B=(A\\cap B^c)\\cup(A^c\\cap B)$."},
+  {t:"Los dos términos son disjuntos",h:"El primero exige que $B$ no ocurra y el segundo que sí, así que no pueden pasar juntos. Por lo tanto vale la aditividad y las probabilidades se suman."},
+  {t:"Expresar cada término",h:"Descomponiendo $A=(A\\cap B)\\cup(A\\cap B^c)$ en partes disjuntas, $P(A\\cap B^c)=P(A)-P(A\\cap B)$. Análogamente $P(A^c\\cap B)=P(B)-P(A\\cap B)$."},
+  {t:"Sumar",h:"$P(A\\triangle B)=[P(A)-P(A\\cap B)]+[P(B)-P(A\\cap B)]=P(A)+P(B)-2P(A\\cap B)$. $\\blacksquare$"},
+  {t:"Por qué el factor 2",h:"En $P(A)+P(B)$ la zona común se cuenta dos veces, y además <b>no debe formar parte</b> del resultado. Hay que descontarla una vez por cada conteo: de ahí el $-2$, en lugar del $-1$ de la fórmula de la unión."}],
+ sim:{controles:[{id:'x',label:'P(A) × 100',min:0,max:100,step:1,val:55},
+                 {id:'y',label:'P(B) × 100',min:0,max:100,step:1,val:45},
+                 {id:'z',label:'P(A ∩ B) × 100',min:0,max:100,step:1,val:22},
+                 {id:'q',tipo:'select',label:'Comparar con',val:0,opts:['Exactamente uno (A △ B)','Al menos uno (A ∪ B)']}],
+  draw:function(ctx,W,H,p){
+    const x=p.x/100,y=p.y/100,z=Math.min(p.z/100,p.x/100,p.y/100);
+    const sym=x+y-2*z, un=x+y-z;
+    const cs=[{x:W/2-82,y:148,r:120,lab:'A',lx:W/2-208,ly:38},
+              {x:W/2+82,y:148,r:120,lab:'B',lx:W/2+208,ly:38}];
+    ctx.fillStyle=C('--panel');RR(ctx,W/2-310,14,620,266,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    region(ctx,W,H,cs,[true,false],alpha(C('--accent'),.45));
+    region(ctx,W,H,cs,[false,true],alpha(C('--accent'),.45));
+    region(ctx,W,H,cs,[true,true],p.q===0?alpha(C('--line'),.6):alpha(C('--accent'),.45));
+    outlines(ctx,cs);
+    T(ctx,(x-z).toFixed(2),W/2-146,154,{s:16,b:1,a:'center'});
+    T(ctx,z.toFixed(2),W/2,154,{s:16,b:1,a:'center',col:p.q===0?'--muted':'--ink'});
+    T(ctx,(y-z).toFixed(2),W/2+146,154,{s:16,b:1,a:'center'});
+    if(p.q===0){T(ctx,'excluida',W/2,174,{s:11,a:'center',col:'--muted'});}
+    T(ctx,p.q===0 ? 'P(exactamente uno) = P(A) + P(B) − 2P(A∩B) = '+sym.toFixed(2)
+                  : 'P(al menos uno) = P(A) + P(B) − P(A∩B) = '+un.toFixed(2),
+      W/2,308,{s:16,b:1,a:'center',col:'--accent'});
+    T(ctx,'La diferencia entre las dos fórmulas es exactamente P(A∩B) = '+z.toFixed(2),
+      W/2,336,{s:12.5,a:'center',col:'--muted'});
+    return {"Exactamente uno":sym.toFixed(4),"Al menos uno":un.toFixed(4),
+            "Los dos":z.toFixed(4),"Ninguno":(1-un).toFixed(4)};
+  }}},
+
+/* ───────────── 19 ───────────── */
+{id:"ej19",g:G3,titulo:"19. Eventos encajados: A ⊂ B",tema:"Monotonía · diagrama de Venn",
+ enunciado:`Sabiendo que $A\\subset B$ y $P(A\\cup B)=p$, $P(A\\cap B)=q$, calcular $P(A)$, $P(B)$ y
+ $P(A^c\\cap B)$. <i>(Ayuda: haga el diagrama de Venn.)</i>`,
+ resultado:`$P(B)=p$, &nbsp;$P(A)=q$, &nbsp;$P(A^c\\cap B)=p-q$ &nbsp;(con $q\\le p$).`,
+ pasos:[
+  {t:"Dibujar antes de calcular",h:"Si $A\\subset B$, el círculo de $A$ está enteramente dentro del de $B$. Todo el ejercicio sale de mirar ese dibujo."},
+  {t:"Simplificar la unión y la intersección",h:"Con $A\\subset B$: todo elemento de $A$ está en $B$, así que $A\\cup B=B$ y $A\\cap B=A$. Las dos operaciones se vuelven triviales."},
+  {t:"Leer las respuestas",h:"$P(B)=P(A\\cup B)=p$ y $P(A)=P(A\\cap B)=q$. No hay nada que despejar: los datos <b>eran</b> $P(B)$ y $P(A)$ disfrazados."},
+  {t:"La corona",h:"$A$ y $A^c\\cap B$ son disjuntos y su unión es $B$, de modo que $P(A^c\\cap B)=P(B)-P(A)=p-q$."},
+  {t:"Consistencia",h:"Necesariamente $q\\le p$: por monotonía, la probabilidad de un subconjunto no puede superar la del conjunto que lo contiene."}],
+ sim:{controles:[{id:'p',label:'p = P(A ∪ B) × 100',min:0,max:100,step:1,val:70},
+                 {id:'q',label:'q = P(A ∩ B) × 100',min:0,max:100,step:1,val:30}],
+  draw:function(ctx,W,H,p_){
+    const p=p_.p/100, q=Math.min(p_.q/100,p_.p/100);
+    const cx=W/2-140, cy=152, RB=118, RA=RB*Math.sqrt(p>0?q/p:0);
+    ctx.fillStyle=C('--panel');RR(ctx,cx-190,20,380,264,12);ctx.fill();
+    ctx.strokeStyle=C('--line');ctx.stroke();
+    ctx.fillStyle=alpha(C('--warn'),.30);ctx.beginPath();ctx.arc(cx,cy,RB,0,7);ctx.fill();
+    ctx.strokeStyle=C('--warn');ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=alpha(C('--accent'),.62);ctx.beginPath();ctx.arc(cx,cy,Math.max(3,RA),0,7);ctx.fill();
+    ctx.strokeStyle=C('--accent');ctx.lineWidth=2;ctx.stroke();
+    T(ctx,'B',cx,cy-RB-12,{s:16,b:1,a:'center',col:'--warn'});
+    T(ctx,'A',cx,cy+4,{s:15,b:1,a:'center'});
+    T(ctx,'q = '+q.toFixed(2),cx,cy+22,{s:12,a:'center'});
+    T(ctx,'p − q = '+(p-q).toFixed(2),cx,cy+RB-16,{s:12.5,b:1,a:'center',col:'--warn'});
+    const L=W/2+40;
+    T(ctx,'A ⊂ B   ⟹   A ∪ B = B   y   A ∩ B = A',L,80,{s:15,b:1,col:'--accent'});
+    T(ctx,'P(B) = P(A ∪ B) = p = '+p.toFixed(2),L,126,{s:15});
+    T(ctx,'P(A) = P(A ∩ B) = q = '+q.toFixed(2),L,158,{s:15});
+    T(ctx,'P(Aᶜ ∩ B) = P(B) − P(A) = '+(p-q).toFixed(2),L,190,{s:15});
+    T(ctx, p_.q>p_.p ? '⚠ q > p es imposible: por monotonía q ≤ p.'
+                     : 'La corona naranja es lo que está en B pero no en A.',
+      L,232,{s:12.5,col:p_.q>p_.p?'--bad':'--muted'});
+    return {"P(A)":q.toFixed(4),"P(B)":p.toFixed(4),"P(Aᶜ ∩ B)":(p-q).toFixed(4),
+            "P(Bᶜ)":(1-p).toFixed(4)};
+  }}},
+
+/* ───────────── 20 ───────────── */
+{id:"ej20",g:G3,titulo:"20. ¿Pueden ser disjuntos?",tema:"Razonamiento por el absurdo",
+ enunciado:`Supongamos que $P(A)=0{,}8$ y $P(B)=0{,}3$. ¿Es correcto decir que $A\\cap B=\\varnothing$?
+ ¿Por qué?`,
+ resultado:`No. Si fueran disjuntos sería $P(A\\cup B)=1{,}1>1$, absurdo. De hecho
+ $P(A\\cap B)\\ge0{,}1$ por Bonferroni.`,
+ pasos:[
+  {t:"Suponer lo contrario",h:"Supongamos, por el absurdo, que $A\\cap B=\\varnothing$. Entonces los eventos serían incompatibles."},
+  {t:"Aplicar aditividad",h:"Para eventos incompatibles, $P(A\\cup B)=P(A)+P(B)=0{,}8+0{,}3=1{,}1$."},
+  {t:"Llegar al absurdo",h:"Pero ninguna probabilidad puede superar $1$. La suposición es falsa: <b>no</b> pueden ser disjuntos."},
+  {t:"Cuantificar el solapamiento",h:"Bonferroni (ejercicio 16) da la cota explícita: $P(A\\cap B)\\ge P(A)+P(B)-1=0{,}1$. Comparten al menos un $10\\%$ de probabilidad."},
+  {t:"La regla general",h:"Dos eventos con $P(A)+P(B)>1$ <b>tienen</b> que solaparse. Mové los sliders y mirá cuándo la barra combinada desborda el 1."}],
+ sim:{controles:[{id:'x',label:'P(A) × 100',min:0,max:100,step:1,val:80},
+                 {id:'y',label:'P(B) × 100',min:0,max:100,step:1,val:30}],
+  draw:function(ctx,W,H,p){
+    const x=p.x/100,y=p.y/100,sum=x+y,lo=Math.max(0,sum-1);
+    const L=100,R=W-100,esc=1.3;
+    ctx.fillStyle=alpha(C('--line'),.6);RR(ctx,L,110,(R-L)/esc,44,7);ctx.fill();
+    T(ctx,'todo el espacio: probabilidad 1',L+(R-L)/esc/2,138,{s:12.5,a:'center',col:'--muted'});
+    ctx.fillStyle=alpha(C('--accent'),.75);RR(ctx,L,60,(R-L)*x/esc,36,6);ctx.fill();
+    T(ctx,'P(A) = '+x.toFixed(2),L+8,84,{s:14,b:1});
+    ctx.fillStyle=alpha(C('--warn'),.75);RR(ctx,L+(R-L)*x/esc,60,(R-L)*y/esc,36,6);ctx.fill();
+    T(ctx,'P(B) = '+y.toFixed(2),L+(R-L)*x/esc+8,84,{s:14,b:1});
+    const x1=L+(R-L)/esc;
+    ctx.strokeStyle=C('--bad');ctx.lineWidth=2.2;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(x1,42);ctx.lineTo(x1,168);ctx.stroke();ctx.setLineDash([]);
+    T(ctx,'límite 1',x1,34,{s:12,a:'center',b:1,col:'--bad'});
+    if(sum>1){ctx.fillStyle=alpha(C('--bad'),.55);
+      RR(ctx,x1,60,(R-L)*(sum-1)/esc,36,6);ctx.fill();
+      T(ctx,'exceso '+(sum-1).toFixed(2),x1+(R-L)*(sum-1)/esc/2,50,{s:12,b:1,a:'center',col:'--bad'});}
+    T(ctx, sum>1 ? 'Si fueran disjuntos, P(A∪B) = '+sum.toFixed(2)+' > 1  →  IMPOSIBLE'
+                 : 'Con esta suma sí podrían ser disjuntos (P(A∪B) = '+sum.toFixed(2)+' ≤ 1)',
+      W/2,216,{s:17,b:1,a:'center',col:sum>1?'--bad':'--accent2'});
+    T(ctx, sum>1 ? 'Bonferroni: se solapan al menos en P(A∩B) ≥ '+lo.toFixed(2)
+                 : 'Bonferroni da P(A∩B) ≥ 0, que no aporta información.',
+      W/2,254,{s:14,a:'center',col:'--muted'});
+    T(ctx,'Datos del enunciado: P(A)=0,80 y P(B)=0,30 → suma 1,10 → solapamiento mínimo 0,10',
+      W/2,294,{s:12.5,a:'center',col:'--muted'});
+    return {"P(A)+P(B)":sum.toFixed(2),"¿Pueden ser disjuntos?":sum<=1?'Sí':'No',
+            "P(A∩B) mínima":lo.toFixed(2)};
+  }}},
+
+/* ───────────── 21 ───────────── */
+{id:"ej21",g:G3,titulo:"21. Probabilidad cero no es conjunto vacío",tema:"Eventos nulos · contraejemplo",
+ enunciado:`Supongamos que $P(A\\cup B)=P(A)+P(B)$. ¿Puedo asegurar que $A\\cap B=\\varnothing$?`,
+ resultado:`No. Sólo se deduce $P(A\\cap B)=0$. Contraejemplo: $X$ uniforme en $[0,1]$, $A=[0,\\tfrac12]$,
+ $B=[\\tfrac12,1]$; entonces $A\\cap B=\\{\\tfrac12\\}\\neq\\varnothing$ pero tiene probabilidad $0$.`,
+ pasos:[
+  {t:"Qué sí se deduce",h:"De $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$ y la hipótesis sale directamente $P(A\\cap B)=0$. Eso es todo lo que la hipótesis garantiza."},
+  {t:"Qué no se deduce",h:"Probabilidad cero <b>no</b> es lo mismo que conjunto vacío. La respuesta es no: no se puede asegurar que $A\\cap B=\\varnothing$."},
+  {t:"El contraejemplo",h:"Sea $X$ uniforme en $[0,1]$ y tomemos $A=[0,\\tfrac12]$, $B=[\\tfrac12,1]$. Entonces $P(A)=P(B)=\\tfrac12$ y $P(A\\cup B)=1=P(A)+P(B)$: la hipótesis se cumple."},
+  {t:"Pero la intersección no es vacía",h:"$A\\cap B=\\{\\tfrac12\\}$, que <b>no</b> es vacío. Su probabilidad es $0$ porque un punto aislado tiene longitud nula. Ahí está la disociación."},
+  {t:"De dónde viene la intuición engañosa",h:"En espacios finitos equiprobables las dos nociones coinciden, y uno se acostumbra. En espacios continuos hay eventos no vacíos de probabilidad cero: los <i>eventos nulos</i>. La implicación vale en un solo sentido: $A\\cap B=\\varnothing\\Rightarrow P(A\\cap B)=0$, pero no al revés."}],
+ sim:{controles:[{id:'z',label:'Zoom alrededor de 1/2 (×10^k)',min:0,max:6,step:1,val:0}],
+  draw:function(ctx,W,H,p){
+    const k=p.z, half=0.5/Math.pow(10,k);
+    const L=90,R=W-90,y=132, xs=u=>L+(R-L)*(u-(0.5-half))/(2*half);
+    const a0=Math.max(0.5-half,0), a1=0.5, b1=Math.min(0.5+half,1);
+    ctx.fillStyle=alpha(C('--accent'),.35);ctx.fillRect(xs(a0),y-40,xs(a1)-xs(a0),80);
+    ctx.fillStyle=alpha(C('--warn'),.35);ctx.fillRect(xs(a1),y-40,xs(b1)-xs(a1),80);
+    ctx.strokeStyle=C('--ink');ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(L,y+40);ctx.lineTo(R,y+40);ctx.stroke();
+    T(ctx,'A = [0 , ½]',(xs(a0)+xs(a1))/2,y-52,{s:14,b:1,a:'center',col:'--accent'});
+    T(ctx,'B = [½ , 1]',(xs(a1)+xs(b1))/2,y-52,{s:14,b:1,a:'center',col:'--warn'});
+    ctx.fillStyle=C('--bad');ctx.beginPath();ctx.arc(xs(.5),y,7,0,7);ctx.fill();
+    ctx.strokeStyle=C('--bad');ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(xs(.5),y-40);ctx.lineTo(xs(.5),y+52);ctx.stroke();
+    T(ctx,'A ∩ B = { ½ }',xs(.5),y+76,{s:15,b:1,a:'center',col:'--bad'});
+    T(ctx,(0.5-half).toPrecision(k?k+2:1),L,y+62,{s:11.5,a:'center',col:'--muted'});
+    T(ctx,(0.5+half).toPrecision(k?k+2:1),R,y+62,{s:11.5,a:'center',col:'--muted'});
+    T(ctx,'Escala del eje: ancho '+(2*half).toExponential(0)+'   ·   por más que amplifiques, la intersección sigue siendo un solo punto.',
+      W/2,222,{s:12.5,a:'center',col:'--muted'});
+    T(ctx,'P(A) + P(B) = 0,5 + 0,5 = 1 = P(A ∪ B)   ✓ se cumple la hipótesis',W/2,262,{s:14.5,b:1,a:'center',col:'--accent'});
+    T(ctx,'P(A ∩ B) = longitud de { ½ } = 0   ·   pero A ∩ B ≠ ∅',W/2,294,{s:14.5,b:1,a:'center',col:'--bad'});
+    T(ctx,'Probabilidad cero ⇏ conjunto vacío',W/2,328,{s:16,b:1,a:'center'});
+    return {"P(A)":"0,5000","P(B)":"0,5000","P(A∪B)":"1,0000","P(A∩B)":"0,0000",
+            "A∩B":"{ ½ } ≠ ∅"};
+  }}}
+];
+
+/* ══════════════ MOTOR ══════════════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Práctica 1 — Probabilidades y Estadística Matemática · Lic. en Matemática, Facultad de Ciencias
+    Exactas, UNCPBA · Agosto 2026. Generado a partir del archivo LaTeX de la guía.</footer>`;
+  main.appendChild(s);
+
+  /* pasos */
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  /* simulación */
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

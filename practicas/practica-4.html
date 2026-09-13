@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 4 — Variables aleatorias discretas, esperanza y varianza</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════ HELPERS PROPIOS DE ESTA GUÍA ══════ */
+function combi(n,k){ if(k<0||k>n) return 0; let r=1; for(let i=1;i<=k;i++) r=r*(n-k+i)/i; return r; }
+function sobre(n,m){ let s=0; for(let j=0;j<=m;j++) s+=(j%2?-1:1)*combi(m,j)*Math.pow(m-j,n); return s; }
+
+/* Histograma de una función de probabilidad. series = [{p:[...], col:'--accent', lab:'...'}] */
+function hist(ctx,W,H,labels,series,titulo){
+  const padL=54, padR=24, top=44, bot=52;
+  const n=labels.length, gw=(W-padL-padR)/n;
+  let mx=0; series.forEach(s=>s.p.forEach(v=>{ if(v>mx) mx=v; }));
+  mx=Math.max(mx,1e-9);
+  const y0=H-bot, hh=y0-top;
+  ctx.strokeStyle=C('--line'); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,y0+.5); ctx.lineTo(W-padR,y0+.5); ctx.stroke();
+  for(let g=0; g<=4; g++){
+    const y=y0-hh*g/4;
+    ctx.strokeStyle=alpha(C('--line'),.8); ctx.beginPath();
+    ctx.moveTo(padL,y+.5); ctx.lineTo(W-padR,y+.5); ctx.stroke();
+    T(ctx,(mx*g/4).toFixed(3),padL-8,y+4,{s:10.5,a:'right',col:'--muted'});
+  }
+  T(ctx,titulo||'',padL-40,22,{s:12.5,col:'--muted'});
+  const k=series.length, bw=gw/(k+0.6);
+  labels.forEach((L,i)=>{
+    series.forEach((s,j)=>{
+      const v=s.p[i]||0, h=hh*v/mx;
+      const x=padL+i*gw+gw*0.12+j*bw;
+      ctx.fillStyle=alpha(C(s.col),.92);
+      RR(ctx,x,y0-h,bw*0.86,Math.max(1,h),3); ctx.fill();
+      if(v>0.0004) T(ctx,v.toFixed(3),x+bw*0.43,y0-h-5,{s:10,a:'center',col:'--muted'});
+    });
+    T(ctx,L,padL+i*gw+gw/2,y0+17,{s:12.5,a:'center'});
+  });
+  let lx=padL;
+  series.forEach(s=>{ if(!s.lab) return;
+    ctx.fillStyle=C(s.col); RR(ctx,lx,H-20,12,12,3); ctx.fill();
+    T(ctx,s.lab,lx+17,H-10,{s:11.5,col:'--muted'}); lx+=ctx.measureText(s.lab).width+52; });
+}
+
+/* Barra de comparación entre dos cantidades */
+function duelo(ctx,W,H,a,b){
+  bar(ctx,70,110,W-160,30,a.v/Math.max(a.v,b.v),a.col||'--accent',a.lab,a.txt);
+  bar(ctx,70,210,W-160,30,b.v/Math.max(a.v,b.v),b.col||'--accent2',b.lab,b.txt);
+}
+
+const EJERCICIOS = [
+
+/* ─────────────── BLOQUE 1: funciones de probabilidad ─────────────── */
+{
+  id:"ej1", g:"Funciones de probabilidad (1–5)", titulo:"1. Bolillas en urnas: urnas vacías",
+  tema:"ocupación · inclusión–exclusión",
+  enunciado:"Se colocan al azar 10 bolillas distinguibles en 4 urnas. Hallar la función de probabilidad del número de urnas vacías.",
+  resultado:"$P(X=k)=\\dfrac{\\binom{4}{k}\\sum_{j=0}^{4-k}(-1)^j\\binom{4-k}{j}(4-k-j)^{10}}{4^{10}}$, con $P(0)\\approx 0{,}7806$, $P(1)\\approx 0{,}2136$, $P(2)\\approx 0{,}0058$ y $P(3)=\\tfrac{1}{262144}$.",
+  pasos:[
+    {t:"Espacio muestral", h:"Cada bolilla elige urna de forma independiente y uniforme: hay $4^{10}=1\\,048\\,576$ asignaciones equiprobables."},
+    {t:"Rango de $X$", h:"Con 10 bolillas nunca quedan las 4 urnas vacías, así que $X\\in\\{0,1,2,3\\}$."},
+    {t:"Fijar cuáles quedan vacías", h:"Elegimos las $k$ urnas vacías de $\\binom{4}{k}$ maneras. Las 10 bolillas deben ocupar las $4-k$ restantes sin dejar ninguna libre."},
+    {t:"Contar sobreyecciones", h:"Por inclusión–exclusión, el número de funciones sobreyectivas de 10 bolillas en $m$ urnas es $\\sum_{j=0}^{m}(-1)^j\\binom{m}{j}(m-j)^{10}$."},
+    {t:"Juntar y verificar", h:"Dividiendo por $4^{10}$ se obtiene la función de probabilidad, y las cuatro probabilidades suman exactamente 1."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Bolillas (n)", min:1, max:24, step:1, val:10},
+      {id:"r", label:"Urnas (r)", min:2, max:8, step:1, val:4}
+    ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, r=p.r, tot=Math.pow(r,n), labs=[], ps=[];
+      let E=0;
+      for(let k=0;k<r;k++){
+        const v=combi(r,k)*sobre(n,r-k)/tot;
+        labs.push(String(k)); ps.push(Math.max(0,v)); E+=k*Math.max(0,v);
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(X = k)'}],
+           'Número de urnas vacías con n='+n+' bolillas y r='+r+' urnas');
+      return {"E(X) exacta":(r*Math.pow((r-1)/r,n)).toFixed(4), "E(X) desde la f.p.":E.toFixed(4), "Más probable":labs[ps.indexOf(Math.max.apply(null,ps))]};
+    }
+  }
+},
+{
+  id:"ej2", g:"Funciones de probabilidad (1–5)", titulo:"2. Hasta la primera roja",
+  tema:"con y sin reemplazo · geométrica",
+  enunciado:"Una urna contiene 3 bolillas rojas y 2 blancas. (a) Se extraen sin reemplazo hasta obtener una roja: hallar la función de probabilidad del número de extracciones. (b) Ídem con reemplazo.",
+  resultado:"(a) $P(1)=\\tfrac{3}{5}$, $P(2)=\\tfrac{3}{10}$, $P(3)=\\tfrac{1}{10}$, con $E(X)=\\tfrac32$. &nbsp; (b) $X\\sim\\mathrm{Geo}(3/5)$: $P(X=k)=\\left(\\tfrac25\\right)^{k-1}\\tfrac35$, con $E(X)=\\tfrac53$.",
+  pasos:[
+    {t:"Sin reemplazo: rango finito", h:"Sólo hay 2 blancas, así que a más tardar en la tercera extracción sale una roja: $X\\in\\{1,2,3\\}$."},
+    {t:"Regla del producto", h:"$P(X=2)=\\tfrac{2}{5}\\cdot\\tfrac{3}{4}$ y $P(X=3)=\\tfrac{2}{5}\\cdot\\tfrac{1}{4}\\cdot 1$: cada factor usa la composición actualizada de la urna."},
+    {t:"Con reemplazo: ensayos independientes", h:"La urna vuelve a su estado original, así que cada extracción es Bernoulli con $p=3/5$ y $X$ es geométrica."},
+    {t:"Comparar las dos esperanzas", h:"$3/2 < 5/3$: sacar blancas sin reponerlas aumenta la proporción de rojas y acorta la espera."}
+  ],
+  sim:{
+    controles:[
+      {id:"R", label:"Rojas", min:1, max:6, step:1, val:3},
+      {id:"B", label:"Blancas", min:1, max:8, step:1, val:2}
+    ],
+    draw:function(ctx,W,H,p){
+      const R=p.R, B=p.B, N=R+B, kmax=B+1, labs=[], sinR=[], conR=[];
+      let Es=0, Ec=0;
+      for(let k=1;k<=Math.min(kmax,9);k++){
+        let q=1; for(let j=0;j<k-1;j++) q*= (B-j)/(N-j);
+        const v=(k-1<B)? q*R/(N-(k-1)) : 0;
+        sinR.push(v); Es+=k*v;
+        const w=Math.pow(B/N,k-1)*(R/N); conR.push(w); Ec+=k*w;
+        labs.push(String(k));
+      }
+      hist(ctx,W,H,labs,[{p:sinR,col:'--accent',lab:'sin reemplazo'},{p:conR,col:'--accent2',lab:'con reemplazo'}],
+           'Extracciones hasta la primera roja ('+R+' rojas, '+B+' blancas)');
+      return {"E sin reemplazo":((N+1)/(R+1)).toFixed(4), "E con reemplazo":(N/R).toFixed(4), "Masa mostrada (geom.)":Ec>0?(conR.reduce((a,b)=>a+b,0)).toFixed(4):'—'};
+    }
+  }
+},
+{
+  id:"ej3", g:"Funciones de probabilidad (1–5)", titulo:"3. Marcas de cuadernos",
+  tema:"cobertura · inclusión–exclusión",
+  enunciado:"En una librería hay tres marcas distintas de cuadernos en cantidades iguales. Una persona compra al azar 10 cuadernos. Hallar la función de probabilidad del número de marcas que compra.",
+  resultado:"$P(X=1)=\\tfrac{1}{19683}$, $P(X=2)=\\tfrac{1022}{19683}\\approx 0{,}0519$, $P(X=3)=\\tfrac{6220}{6561}\\approx 0{,}9480$.",
+  pasos:[
+    {t:"Modelo", h:"Con marcas en cantidades iguales, cada cuaderno es una marca uniforme en $\\{1,2,3\\}$, independiente: $3^{10}$ resultados equiprobables."},
+    {t:"Es el ejercicio 1 dado vuelta", h:"Cuadernos $\\to$ bolillas, marcas $\\to$ urnas; ahora contamos urnas ocupadas en lugar de vacías."},
+    {t:"Inclusión–exclusión", h:"$P(X=m)=\\binom{3}{m}\\,\\mathrm{Sob}(10,m)/3^{10}$, con $\\mathrm{Sob}(10,m)=\\sum_j(-1)^j\\binom{m}{j}(m-j)^{10}$."},
+    {t:"Lectura del resultado", h:"Con 10 compras es casi seguro (95%) llevarse las tres marcas: sólo 5% de las veces falta alguna."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Cuadernos comprados (n)", min:1, max:20, step:1, val:10},
+      {id:"m", label:"Marcas disponibles", min:2, max:6, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, M=p.m, tot=Math.pow(M,n), labs=[], ps=[];
+      for(let k=1;k<=M;k++){ labs.push(String(k)); ps.push(Math.max(0,combi(M,k)*sobre(n,k)/tot)); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent2',lab:'P(marcas = k)'}],
+           'Marcas distintas entre n='+n+' cuadernos, con '+M+' marcas en oferta');
+      return {"E(X)":(M*(1-Math.pow((M-1)/M,n))).toFixed(4), "P(todas las marcas)":ps[M-1].toFixed(5)};
+    }
+  }
+},
+{
+  id:"ej4", g:"Funciones de probabilidad (1–5)", titulo:"4. Hipergeométrica vs. binomial",
+  tema:"muestreo con y sin reposición",
+  enunciado:"Una urna contiene 10 bolillas, 3 negras y 7 blancas. (a) Se extraen 3 bolillas distintas; hallar la función de probabilidad de $X=$ «nro. de negras». (b) Ídem con reemplazo.",
+  resultado:"(a) $P(X=x)=\\dfrac{\\binom{3}{x}\\binom{7}{3-x}}{\\binom{10}{3}}$: $\\tfrac{7}{24},\\ \\tfrac{21}{40},\\ \\tfrac{7}{40},\\ \\tfrac{1}{120}$. &nbsp; (b) $X\\sim\\mathrm{Bi}(3;0{,}3)$: $0{,}343;\\ 0{,}441;\\ 0{,}189;\\ 0{,}027$.",
+  pasos:[
+    {t:"Sin reposición: hipergeométrica", h:"Elegimos $x$ negras de 3 y $3-x$ blancas de 7, sobre las $\\binom{10}{3}=120$ muestras posibles."},
+    {t:"Con reposición: binomial", h:"Cada extracción es Bernoulli independiente con $p=3/10$, así que $X\\sim\\mathrm{Bi}(3;0{,}3)$."},
+    {t:"Misma esperanza", h:"Ambas dan $E(X)=3\\cdot 0{,}3=0{,}9$: la marginal de cada extracción es la misma en los dos esquemas."},
+    {t:"Distinta varianza", h:"Sin reposición hay correlación negativa entre extracciones; la varianza se achica por el factor $\\tfrac{N-n}{N-1}=\\tfrac{7}{9}$."}
+  ],
+  sim:{
+    controles:[
+      {id:"N", label:"Bolillas en la urna (N)", min:4, max:40, step:1, val:10},
+      {id:"D", label:"Negras (D)", min:1, max:20, step:1, val:3},
+      {id:"n", label:"Tamaño de muestra (n)", min:1, max:10, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const N=p.N, D=Math.min(p.D,N), n=Math.min(p.n,N), labs=[], hg=[], bi=[];
+      const pp=D/N; let Vh=0, Vb=0, Eh=0;
+      for(let x=0;x<=n;x++){
+        const h=combi(D,x)*combi(N-D,n-x)/combi(N,n);
+        const b=combi(n,x)*Math.pow(pp,x)*Math.pow(1-pp,n-x);
+        labs.push(String(x)); hg.push(Math.max(0,h)); bi.push(b); Eh+=x*h;
+      }
+      for(let x=0;x<=n;x++){ Vh+=Math.pow(x-n*pp,2)*hg[x]; Vb+=Math.pow(x-n*pp,2)*bi[x]; }
+      hist(ctx,W,H,labs,[{p:hg,col:'--accent',lab:'hipergeométrica (sin reposición)'},{p:bi,col:'--accent2',lab:'binomial (con reposición)'}],
+           'Negras en la muestra: N='+N+', D='+D+', n='+n);
+      return {"E(X) (ambas)":(n*pp).toFixed(4), "Var hipergeom.":Vh.toFixed(4), "Var binomial":Vb.toFixed(4), "Factor N−n / N−1":(N>1?((N-n)/(N-1)).toFixed(4):'—')};
+    }
+  }
+},
+{
+  id:"ej5", g:"Funciones de probabilidad (1–5)", titulo:"5. Palos en una mano de 3 cartas",
+  tema:"conteo por casos · mazo español",
+  enunciado:"Se toman al azar 3 cartas distintas de un mazo de 40 cartas españolas. Hallar la función de probabilidad de $X=$ «nro. de palos obtenidos».",
+  resultado:"$P(X=1)=\\tfrac{12}{247}\\approx 0{,}0486$, $P(X=2)=\\tfrac{135}{247}\\approx 0{,}5466$, $P(X=3)=\\tfrac{100}{247}\\approx 0{,}4049$.",
+  pasos:[
+    {t:"Espacio muestral", h:"Las $\\binom{40}{3}=9880$ manos son equiprobables; 4 palos de 10 cartas cada uno."},
+    {t:"Un solo palo", h:"Elegimos el palo (4 formas) y 3 cartas dentro: $4\\binom{10}{3}=480$ manos."},
+    {t:"Tres palos", h:"Elegimos 3 palos ($\\binom{4}{3}=4$) y una carta de cada uno: $4\\cdot 10^3=4000$ manos."},
+    {t:"Dos palos, por complemento local", h:"Elegimos 2 palos ($\\binom{4}{2}=6$) y 3 cartas entre esas 20 sin que caigan todas en el mismo: $6[\\binom{20}{3}-2\\binom{10}{3}]=5400$."},
+    {t:"Verificación", h:"$480+5400+4000=9880$: la partición cubre exactamente el espacio muestral."}
+  ],
+  sim:{
+    controles:[
+      {id:"c", label:"Cartas por palo", min:2, max:13, step:1, val:10},
+      {id:"n", label:"Cartas que se toman", min:2, max:4, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const c=p.c, n=p.n, N=4*c, labs=[], ps=[];
+      const tot=combi(N,n);
+      for(let k=1;k<=Math.min(4,n);k++){
+        let s=0;
+        for(let j=0;j<=k;j++) s+=(j%2?-1:1)*combi(k,j)*combi((k-j)*c,n);
+        ps.push(Math.max(0,combi(4,k)*s/tot)); labs.push(String(k));
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--warn',lab:'P(palos = k)'}],
+           'Palos representados al tomar '+n+' cartas de '+N);
+      return {"E(X)":(4*(1-combi(3*c,n)/tot)).toFixed(4), "Más probable":labs[ps.indexOf(Math.max.apply(null,ps))]};
+    }
+  }
+},
+
+/* ─────────────── BLOQUE 2: esperanza y varianza ─────────────── */
+{
+  id:"ej6", g:"Esperanza y varianza (6–13)", titulo:"6. Esperanzas por indicadores",
+  tema:"linealidad de la esperanza",
+  enunciado:"Calcular la esperanza de las v.a. de los ejercicios 1, 3, 4 y 5, escribiendo las v.a. como suma de variables aleatorias más sencillas.",
+  resultado:"Ej. 1: $4\\left(\\tfrac34\\right)^{10}\\approx 0{,}2253$. &nbsp; Ej. 3: $3\\left[1-\\left(\\tfrac23\\right)^{10}\\right]\\approx 2{,}9480$. &nbsp; Ej. 4: $0{,}9$ en (a) y (b). &nbsp; Ej. 5: $4\\left[1-\\tfrac{\\binom{30}{3}}{\\binom{40}{3}}\\right]\\approx 2{,}3563$.",
+  pasos:[
+    {t:"La idea", h:"Escribir $X=\\sum_i I_i$ con $I_i$ indicadores. Entonces $E(X)=\\sum_i P(I_i=1)$, sin necesidad de conocer la distribución de $X$."},
+    {t:"Por qué funciona sin independencia", h:"La linealidad de la esperanza vale siempre. Los indicadores de estos cuatro problemas están correlacionados y aun así el cálculo es válido."},
+    {t:"Ej. 1 y 5: complemento", h:"$P(\\text{urna } i \\text{ vacía})=(3/4)^{10}$; $P(\\text{palo } i \\text{ presente})=1-\\binom{30}{3}/\\binom{40}{3}$."},
+    {t:"Ej. 4: la simetría", h:"$P(\\text{la } j\\text{-ésima extracción es negra})=3/10$ tanto con reposición como sin ella: por eso las dos esperanzas coinciden."},
+    {t:"El ahorro", h:"Comparar con el camino largo: obtener $E(X)$ del ejercicio 1 desde su función de probabilidad exige sumar cuatro términos con inclusión–exclusión adentro."}
+  ],
+  sim:{
+    controles:[
+      {id:"cual", tipo:'select', label:"Ejercicio", val:0, opts:['1 · urnas vacías','3 · marcas compradas','5 · palos obtenidos']},
+      {id:"n", label:"Repeticiones (bolillas / cuadernos / cartas)", min:1, max:20, step:1, val:10}
+    ],
+    draw:function(ctx,W,H,p){
+      let r, base, lab, E;
+      if(p.cual===0){ r=4; base=Math.pow(3/4,p.n); E=4*base; lab='E(urnas vacías) = 4·(3/4)^n'; }
+      else if(p.cual===1){ r=3; base=1-Math.pow(2/3,p.n); E=3*base; lab='E(marcas) = 3·[1−(2/3)^n]'; }
+      else { r=4; const n=Math.min(p.n,10); base=1-combi(30,n)/combi(40,n); E=4*base; lab='E(palos) = 4·[1−C(30,n)/C(40,n)]'; }
+      T(ctx,lab,W/2,32,{s:14,b:1,a:'center'});
+      const bw=(W-160)/r;
+      for(let i=0;i<r;i++){
+        const h=Math.max(3,190*base);
+        ctx.fillStyle=alpha(C('--accent'),.9);
+        RR(ctx,80+i*bw+8, 250-h, bw-16, h, 5); ctx.fill();
+        T(ctx,'I'+(i+1),80+i*bw+bw/2,272,{s:13,a:'center',col:'--muted'});
+        T(ctx,base.toFixed(4),80+i*bw+bw/2,250-h-6,{s:11,a:'center',col:'--muted'});
+      }
+      T(ctx,'cada barra es E(I_i); la esperanza total es la suma: '+E.toFixed(4),W/2,320,{s:13,a:'center',col:'--accent2',b:1});
+      return {"E(I_i)":base.toFixed(5), "Sumandos":r, "E(X)":E.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej7", g:"Esperanza y varianza (6–13)", titulo:"7. Cartas y sobres: los desarreglos",
+  tema:"puntos fijos · indicadores dependientes",
+  enunciado:"Sobre el escritorio de Felipe hay 4 cartas y 4 sobres correspondientes. La secretaria introduce las cartas en los sobres al azar. Hallar el número esperado de cartas correctamente introducidas.",
+  resultado:"$E(X)=1$, y el resultado no depende de $n$: con $n$ cartas y $n$ sobres el número esperado de aciertos es siempre 1.",
+  pasos:[
+    {t:"Modelo", h:"Meter las cartas al azar es tomar una permutación uniforme de $\\{1,\\dots,4\\}$; $X$ cuenta sus puntos fijos."},
+    {t:"Indicadores", h:"$I_i=1$ si la carta $i$ va a su sobre. $P(I_i=1)=\\tfrac{3!}{4!}=\\tfrac14$."},
+    {t:"Suma", h:"$E(X)=4\\cdot\\tfrac14=1$. Los $I_i$ no son independientes (si tres aciertan, la cuarta acierta seguro), pero la linealidad no lo pide."},
+    {t:"Generalización", h:"Con $n$ cartas, $E(X)=n\\cdot\\tfrac1n=1$ para todo $n$, y $P(X=0)\\to e^{-1}\\approx 0{,}3679$."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"Cartas y sobres (n)", min:2, max:9, step:1, val:4} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, labs=[], ps=[];
+      // P(X=k) = C(n,k) * D(n-k)/n!  con D = desarreglos
+      const D=[1,0]; for(let i=2;i<=n;i++) D[i]=(i-1)*(D[i-1]+D[i-2]);
+      let f=1; for(let i=2;i<=n;i++) f*=i;
+      let E=0;
+      for(let k=0;k<=n;k++){
+        const v = (k===n-1)?0: combi(n,k)*D[n-k]/f;
+        labs.push(String(k)); ps.push(v); E+=k*v;
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(aciertos = k)'},{p:labs.map((_,k)=>Math.exp(-1)/(function(m){let r=1;for(let i=2;i<=m;i++)r*=i;return r;})(k)),col:'--warn',lab:'Poisson(1) límite'}],
+           'Cartas en su sobre correcto (n='+n+')');
+      return {"E(X)":E.toFixed(4), "P(ningún acierto)":ps[0].toFixed(4), "e^(−1)":Math.exp(-1).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej8", g:"Esperanza y varianza (6–13)", titulo:"8. Transformaciones de una uniforme",
+  tema:"cambio de variable · E y V",
+  enunciado:"Se elige al azar un número de $\\{-2,-1,0,1,2,3,4\\}$; sea $X$ el número elegido. (a) Hallar la función de probabilidad de $2X$, $3X+2$ y $|X-1|$. (b) Hallar la esperanza y la varianza de esas variables.",
+  resultado:"$E(X)=1$, $V(X)=4$. &nbsp; $E(2X)=2$, $V(2X)=16$; $E(3X+2)=5$, $V(3X+2)=36$; $E(|X-1|)=\\tfrac{12}{7}$, $V(|X-1|)=\\tfrac{52}{49}$.",
+  pasos:[
+    {t:"La base", h:"$X$ es uniforme sobre 7 valores: $E(X)=\\tfrac77=1$, $E(X^2)=\\tfrac{35}{7}=5$, luego $V(X)=4$."},
+    {t:"Transformaciones afines", h:"$2X$ y $3X+2$ son inyectivas: cada valor conserva la probabilidad $\\tfrac17$, y valen $E(aX+b)=aE(X)+b$, $V(aX+b)=a^2V(X)$."},
+    {t:"El valor absoluto colapsa valores", h:"$|X-1|$ manda $\\{-2,\\dots,4\\}$ en $\\{3,2,1,0,1,2,3\\}$: hay que sumar probabilidades, y queda $P(0)=\\tfrac17$, $P(1)=P(2)=P(3)=\\tfrac27$."},
+    {t:"Y rompe la linealidad", h:"$E(|X-1|)=\\tfrac{12}{7}\\approx 1{,}71$, mientras que $|E(X)-1|=0$: la igualdad $E(g(X))=g(E(X))$ sólo vale para $g$ afín."}
+  ],
+  sim:{
+    controles:[
+      {id:"g", tipo:'select', label:"Transformación", val:0, opts:['X','2X','3X + 2','|X − 1|']}
+    ],
+    draw:function(ctx,W,H,p){
+      const xs=[-2,-1,0,1,2,3,4];
+      const f = p.g===0? (x=>x) : p.g===1? (x=>2*x) : p.g===2? (x=>3*x+2) : (x=>Math.abs(x-1));
+      const m={}; xs.forEach(x=>{ const v=f(x); m[v]=(m[v]||0)+1/7; });
+      const keys=Object.keys(m).map(Number).sort((a,b)=>a-b);
+      let E=0,E2=0; keys.forEach(k=>{E+=k*m[k];E2+=k*k*m[k];});
+      hist(ctx,W,H,keys.map(String),[{p:keys.map(k=>m[k]),col:'--accent2',lab:'P(Y = y)'}],
+           'Función de probabilidad de Y = '+['X','2X','3X + 2','|X − 1|'][p.g]);
+      return {"E(Y)":E.toFixed(4), "V(Y)":(E2-E*E).toFixed(4), "Valores distintos":keys.length};
+    }
+  }
+},
+{
+  id:"ej9", g:"Esperanza y varianza (6–13)", titulo:"9. ¿3 de 4 o 5 de 8?",
+  tema:"binomial · contraintuitivo",
+  enunciado:"¿Qué es más probable jugando con un adversario en igualdad de condiciones, ganar al menos 3 juegos de 4 o al menos 5 de 8?",
+  resultado:"Es más probable ganar al menos 5 de 8: $\\tfrac{93}{256}\\approx 0{,}3633$ contra $\\tfrac{5}{16}=0{,}3125$.",
+  pasos:[
+    {t:"Modelo", h:"Juegos independientes con $p=1/2$: $Y_n\\sim\\mathrm{Bi}(n;1/2)$ y $P(Y_n\\ge k)=2^{-n}\\sum_{j\\ge k}\\binom{n}{j}$."},
+    {t:"Serie corta", h:"$P(Y_4\\ge 3)=\\dfrac{4+1}{16}=\\dfrac{5}{16}=0{,}3125$."},
+    {t:"Serie larga", h:"$P(Y_8\\ge 5)=\\dfrac{56+28+8+1}{256}=\\dfrac{93}{256}=0{,}3633$."},
+    {t:"Por qué gana la larga", h:"En la serie corta hay que ganar el 75% de los juegos; en la larga, el 62,5%. Lo que decide no es la cantidad de juegos sino cuán lejos de $1/2$ está la fracción exigida."},
+    {t:"El matiz", h:"Si se pidiera la misma fracción en ambos casos (por ejemplo, al menos el 75%), entonces sí la serie larga sería más difícil: es la ley de los grandes números."}
+  ],
+  sim:{
+    controles:[
+      {id:"f", label:"Fracción exigida (%)", min:50, max:95, step:5, val:75},
+      {id:"pp", label:"Prob. de ganar cada juego (%)", min:30, max:70, step:1, val:50}
+    ],
+    draw:function(ctx,W,H,p){
+      const q=p.pp/100;
+      const cola=(n,k)=>{ let s=0; for(let j=k;j<=n;j++) s+=combi(n,j)*Math.pow(q,j)*Math.pow(1-q,n-j); return s; };
+      const k4=Math.ceil(4*p.f/100), k8=Math.ceil(8*p.f/100);
+      const a=cola(4,k4), b=cola(8,k8);
+      duelo(ctx,W,H,
+        {v:a,lab:'al menos '+k4+' de 4',txt:a.toFixed(4),col:'--accent'},
+        {v:b,lab:'al menos '+k8+' de 8',txt:b.toFixed(4),col:'--accent2'});
+      T(ctx,(b>a?'Gana la serie larga':(a>b?'Gana la serie corta':'Empate'))+' · exigencia '+p.f+'%',W/2,300,{s:15,b:1,a:'center',col:'--warn'});
+      const r={}; r["al menos "+k4+" de 4"]=a.toFixed(4); r["al menos "+k8+" de 8"]=b.toFixed(4);
+      r["Diferencia"]=(b-a).toFixed(4); return r;
+    }
+  }
+},
+{
+  id:"ej10", g:"Esperanza y varianza (6–13)", titulo:"10. Análisis de sangre agrupados",
+  tema:"pooling · variable de dos valores",
+  enunciado:"El 10% de los pacientes con ciertos síntomas tienen la enfermedad. El hematólogo mezcla la sangre de 8 pacientes y hace un análisis; si da positivo, debe hacer los 8 análisis individuales. (a) Probabilidad de que el análisis mezclado dé positivo. (b) Función de probabilidad de $X=$ «número de análisis realizados».",
+  resultado:"(a) $1-(0{,}9)^8\\approx 0{,}5695$. &nbsp; (b) $P(X=1)=(0{,}9)^8\\approx 0{,}4305$ y $P(X=9)\\approx 0{,}5695$; $E(X)\\approx 5{,}56 < 8$.",
+  pasos:[
+    {t:"Complemento", h:"La mezcla da negativo sólo si los 8 están sanos: $P=(0{,}9)^8=0{,}430467$."},
+    {t:"Rango de X", h:"$X$ toma sólo dos valores: 1 (negativo, se terminó) o 9 (el mezclado más los 8 individuales)."},
+    {t:"Esperanza", h:"$E(X)=1\\cdot 0{,}4305+9\\cdot 0{,}5695=5{,}5558$ análisis, contra 8 si se hicieran uno por uno."},
+    {t:"Cuándo conviene", h:"El pooling gana si $1+8[1-(1-p)^8]<8$, o sea si $(1-p)^8>1/8$: aproximadamente $p<0{,}2403$. Con prevalencia alta el método empeora."}
+  ],
+  sim:{
+    controles:[
+      {id:"pp", label:"Prevalencia p (%)", min:1, max:60, step:1, val:10},
+      {id:"k", label:"Tamaño del grupo (k)", min:2, max:25, step:1, val:8}
+    ],
+    draw:function(ctx,W,H,p){
+      const q=1-p.pp/100, k=p.k;
+      const neg=Math.pow(q,k), E=1*neg+(k+1)*(1-neg);
+      hist(ctx,W,H,['1 análisis','' +(k+1)+' análisis'],[{p:[neg,1-neg],col:'--accent',lab:'P(X = x)'}],
+           'Análisis necesarios en un grupo de '+k+' pacientes (p='+p.pp+'%)');
+      T(ctx,'E(X) = '+E.toFixed(3)+' vs. '+k+' análisis individuales — '+(E<k?'conviene agrupar':'NO conviene agrupar'),
+        W/2,H-32,{s:14,b:1,a:'center',col:E<k?'--accent2':'--bad'});
+      return {"P(mezclado positivo)":(1-neg).toFixed(4), "E(X)":E.toFixed(4), "Ahorro por paciente":((k-E)/k).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej11", g:"Esperanza y varianza (6–13)", titulo:"11. Cuántas veces jugar al 14",
+  tema:"geométrica · dimensionamiento",
+  enunciado:"¿Cuántas veces hay que jugar al nro. 14 en la ruleta para estar un 90% seguro de llegar a obtener al menos un éxito?",
+  resultado:"$n=85$ jugadas: $1-(36/37)^{85}=0{,}9015$, mientras que con 84 se llega sólo a $0{,}8988$.",
+  pasos:[
+    {t:"Complemento", h:"«Al menos un éxito» es el complemento de «ningún éxito»: $P=1-(36/37)^n$."},
+    {t:"Despejar", h:"$1-(36/37)^n\\ge 0{,}9 \\iff n\\ge \\dfrac{\\ln 0{,}1}{\\ln(36/37)}=84{,}04$."},
+    {t:"Redondear hacia arriba", h:"Como $n$ es entero y la condición es $\\ge$, la respuesta es $n=85$."},
+    {t:"Regla general", h:"$n\\approx \\dfrac{\\ln(1/\\alpha)}{p}$: aquí $37\\ln 10\\approx 85$, más del doble de las $1/p=37$ jugadas que suele suponerse."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Jugadas (n)", min:1, max:250, step:1, val:85},
+      {id:"conf", label:"Confianza deseada (%)", min:50, max:99, step:1, val:90}
+    ],
+    draw:function(ctx,W,H,p){
+      const pr=1/37, P=1-Math.pow(1-pr,p.n), obj=p.conf/100;
+      const nmin=Math.ceil(Math.log(1-obj)/Math.log(1-pr));
+      const padL=60, y0=H-56, hh=y0-50, wd=W-padL-30, NMAX=250;
+      ctx.strokeStyle=C('--line'); ctx.beginPath(); ctx.moveTo(padL,y0); ctx.lineTo(padL+wd,y0); ctx.stroke();
+      ctx.strokeStyle=C('--accent'); ctx.lineWidth=2.2; ctx.beginPath();
+      for(let i=0;i<=NMAX;i++){ const v=1-Math.pow(1-pr,i);
+        const X=padL+wd*i/NMAX, Y=y0-hh*v; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }
+      ctx.stroke();
+      ctx.setLineDash([5,4]); ctx.strokeStyle=C('--warn'); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(padL,y0-hh*obj); ctx.lineTo(padL+wd,y0-hh*obj); ctx.stroke();
+      ctx.strokeStyle=C('--accent2');
+      ctx.beginPath(); ctx.moveTo(padL+wd*nmin/NMAX,y0); ctx.lineTo(padL+wd*nmin/NMAX,50); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=C('--bad'); ctx.beginPath(); ctx.arc(padL+wd*p.n/NMAX, y0-hh*P, 5, 0, 7); ctx.fill();
+      T(ctx,'confianza '+p.conf+'%',padL+4,y0-hh*obj-6,{s:11.5,col:'--warn'});
+      T(ctx,'n mínimo = '+nmin,padL+wd*nmin/NMAX+6,64,{s:12.5,b:1,col:'--accent2'});
+      T(ctx,'P(al menos un 14 en n jugadas), ruleta de 37 números',padL,32,{s:12.5,col:'--muted'});
+      T(ctx,'0',padL-12,y0+4,{s:11,a:'right',col:'--muted'}); T(ctx,'1',padL-12,y0-hh+4,{s:11,a:'right',col:'--muted'});
+      T(ctx,'250 jugadas',padL+wd,y0+18,{s:11,a:'right',col:'--muted'});
+      return {"n elegido":p.n, "P(al menos un éxito)":P.toFixed(4), "n mínimo":nmin};
+    }
+  }
+},
+{
+  id:"ej12", g:"Esperanza y varianza (6–13)", titulo:"12. Utilidad del negocio de computadoras",
+  tema:"transformación afín · varianza",
+  enunciado:"Se compran 3 computadoras a \\$500 y se venden a \\$1000; el fabricante recompra a \\$200 las no vendidas. Con $X=$ «vendidas» de función de probabilidad $0{,}1;\\ 0{,}2;\\ 0{,}3;\\ 0{,}4$ para $x=0,1,2,3$, calcular la esperanza y la varianza de la utilidad $Y$.",
+  resultado:"$Y=800X-900$, con $E(Y)=\\$700$ y $V(Y)=640\\,000$ (desvío \\$800).",
+  pasos:[
+    {t:"Escribir Y en función de X", h:"$Y=1000X+200(3-X)-1500=800X-900$: es una función afín de $X$."},
+    {t:"Momentos de X", h:"$E(X)=0(0{,}1)+1(0{,}2)+2(0{,}3)+3(0{,}4)=2$ y $E(X^2)=5$, luego $V(X)=5-4=1$."},
+    {t:"Transformar", h:"$E(Y)=800E(X)-900=700$ y $V(Y)=800^2V(X)=640\\,000$; la constante $-900$ no afecta la varianza."},
+    {t:"Leer el riesgo", h:"Utilidad esperada \\$700 con desvío \\$800: si no vende ninguna, pierde \\$900. Rentable en promedio, muy volátil en una sola tanda."}
+  ],
+  sim:{
+    controles:[
+      {id:"p3", label:"Peso de x = 3 (%)", min:0, max:80, step:5, val:40},
+      {id:"rec", label:"Precio de recompra ($)", min:0, max:500, step:25, val:200}
+    ],
+    draw:function(ctx,W,H,p){
+      const t=p.p3/100, resto=1-t;
+      const w=[1,2,3].reduce((a,b)=>a+b,0);
+      const pr=[resto*1/6, resto*2/6, resto*3/6, t];
+      const y=x=>1000*x+p.rec*(3-x)-1500;
+      let E=0,E2=0; pr.forEach((q,x)=>{E+=y(x)*q;E2+=y(x)*y(x)*q;});
+      hist(ctx,W,H,[0,1,2,3].map(x=>'x='+x+'→$'+y(x)),[{p:pr,col:'--accent',lab:'P(X = x)'}],
+           'Utilidad por cantidad vendida (recompra $'+p.rec+')');
+      T(ctx,'E(Y) = $'+E.toFixed(2)+'   ·   σ(Y) = $'+Math.sqrt(E2-E*E).toFixed(2),W/2,H-30,{s:14,b:1,a:'center',col:'--accent2'});
+      return {"E(Y)":'$'+E.toFixed(2), "V(Y)":(E2-E*E).toFixed(0), "σ(Y)":'$'+Math.sqrt(E2-E*E).toFixed(2)};
+    }
+  }
+},
+{
+  id:"ej13", g:"Esperanza y varianza (6–13)", titulo:"13. Lijas del carpintero",
+  tema:"linealidad · suma de 1000 v.a.",
+  enunciado:"Un carpintero usa 3 lijas en el 30% de las mesas, 4 en el 50% y 5 en el 20%. Si debe lijar 1000 mesas, ¿cuál es el número esperado de lijas?",
+  resultado:"$E(L)=3{,}9$ lijas por mesa, luego $E(T)=1000\\cdot 3{,}9=3900$ lijas.",
+  pasos:[
+    {t:"Esperanza por mesa", h:"$E(L)=3(0{,}3)+4(0{,}5)+5(0{,}2)=0{,}9+2+1=3{,}9$."},
+    {t:"Escalar por linealidad", h:"$T=\\sum_{i=1}^{1000}L_i$ y $E(T)=\\sum E(L_i)=1000\\cdot 3{,}9=3900$."},
+    {t:"Qué NO hace falta", h:"No se necesita independencia entre mesas: alcanza con que cada una tenga la misma distribución marginal."},
+    {t:"Qué sí haría falta para el riesgo", h:"Para la varianza de $T$ sí importa la dependencia: con mesas independientes, $V(T)=1000\\cdot 0{,}49=490$."}
+  ],
+  sim:{
+    controles:[
+      {id:"a", label:"% de mesas con 3 lijas", min:0, max:100, step:5, val:30},
+      {id:"b", label:"% de mesas con 4 lijas", min:0, max:100, step:5, val:50},
+      {id:"m", label:"Mesas a lijar", min:100, max:5000, step:100, val:1000}
+    ],
+    draw:function(ctx,W,H,p){
+      let a=p.a/100, b=p.b/100; if(a+b>1){ const s=a+b; a/=s; b/=s; }
+      const c=1-a-b, E=3*a+4*b+5*c, V=9*a+16*b+25*c-E*E;
+      hist(ctx,W,H,['3 lijas','4 lijas','5 lijas'],[{p:[a,b,c],col:'--warn',lab:'proporción de mesas'}],
+           'Lijas por mesa · E = '+E.toFixed(3));
+      T(ctx,p.m+' mesas  →  '+(E*p.m).toFixed(0)+' lijas esperadas',W/2,H-30,{s:15,b:1,a:'center',col:'--accent2'});
+      return {"E por mesa":E.toFixed(3), "Total esperado":(E*p.m).toFixed(1), "σ del total (indep.)":Math.sqrt(V*p.m).toFixed(2)};
+    }
+  }
+},
+
+/* ─────────────── BLOQUE 3: simetría, geométrica, indicadores ─────────────── */
+{
+  id:"ej14", g:"Simetría, geométrica e indicadores (14–20)", titulo:"14. Media y mediana en v.a. simétricas",
+  tema:"demostración · contraejemplo",
+  enunciado:"Una v.a. es simétrica si para algún $a$ y todo $k$, $f(a-k)=f(a+k)$. Mostrar que si además tiene esperanza y mediana única, media y mediana coinciden. Encontrar una v.a. NO simétrica con media igual a mediana.",
+  resultado:"Si $X$ es simétrica respecto de $a$, entonces $E(X)=\\tilde{x}=a$. La recíproca es falsa: $P(0)=0{,}4$, $P(1)=0{,}3$, $P(2)=0{,}2$, $P(3)=0{,}1$ tiene media $=$ mediana $=1$ y no es simétrica.",
+  pasos:[
+    {t:"Centrar", h:"Sea $Z=X-a$. La simetría dice $f_Z(k)=f_Z(-k)$, es decir, $Z$ y $-Z$ tienen la misma distribución."},
+    {t:"La media", h:"Como $E(X)$ existe, $E(Z)=E(-Z)=-E(Z)$, de donde $E(Z)=0$ y $E(X)=a$."},
+    {t:"La mediana", h:"$P(Z<0)=P(Z>0)=q$ y $2q+P(Z=0)=1$, así que $q\\le\\tfrac12$: $a$ cumple la definición de mediana, y por unicidad $\\tilde{x}=a$."},
+    {t:"La recíproca falla", h:"Con $P(0)=0{,}4$, $P(1)=0{,}3$, $P(2)=0{,}2$, $P(3)=0{,}1$: $E(X)=1$ y la mediana es 1 (única), pero $f(0)=0{,}4\\ne 0{,}2=f(2)$."},
+    {t:"Qué sí garantiza la simetría", h:"La igualdad de todos los momentos centrales impares; el contraejemplo tiene asimetría no nula."}
+  ],
+  sim:{
+    controles:[
+      {id:"p0", label:"P(X=0) (%)", min:5, max:70, step:5, val:40},
+      {id:"p1", label:"P(X=1) (%)", min:5, max:70, step:5, val:30},
+      {id:"p2", label:"P(X=2) (%)", min:5, max:70, step:5, val:20}
+    ],
+    draw:function(ctx,W,H,p){
+      let q=[p.p0/100,p.p1/100,p.p2/100]; let s=q[0]+q[1]+q[2];
+      if(s>=1){ q=q.map(v=>v*0.95/s); s=q.reduce((a,b)=>a+b,0); }
+      q.push(1-s);
+      let E=0; q.forEach((v,x)=>E+=x*v);
+      let med=null, acc=0;
+      for(let x=0;x<4;x++){
+        const men=q.slice(0,x).reduce((a,b)=>a+b,0), may=q.slice(x+1).reduce((a,b)=>a+b,0);
+        if(men<=0.5 && may<=0.5){ med=(med===null)?x:med+'/'+x; }
+      }
+      const sim = Math.abs(q[0]-q[3])<1e-9 && Math.abs(q[1]-q[2])<1e-9;
+      hist(ctx,W,H,['0','1','2','3'],[{p:q,col:'--accent',lab:'P(X = x)'}],
+           'Distribución sobre {0,1,2,3}');
+      const igual = (med!==null && Math.abs(E-parseFloat(med))<1e-9);
+      T(ctx,'media = '+E.toFixed(3)+'   ·   mediana = '+(med===null?'—':med)+'   ·   '+(sim?'simétrica':'NO simétrica'),
+        W/2,H-30,{s:14,b:1,a:'center',col:igual?'--accent2':'--muted'});
+      return {"Media":E.toFixed(4), "Mediana":(med===null?'—':med), "¿Simétrica?":(sim?'sí':'no'), "¿Coinciden?":(igual?'sí':'no')};
+    }
+  }
+},
+{
+  id:"ej15", g:"Simetría, geométrica e indicadores (14–20)", titulo:"15. Las 20 llaves",
+  tema:"geométrica vs. uniforme",
+  enunciado:"Un hombre tiene 20 llaves y sólo una abre la puerta; prueba al azar. Hallar esperanza y varianza del número de ensayos (a) si no descarta las llaves erróneas, (b) si las descarta.",
+  resultado:"(a) $X\\sim\\mathrm{Geo}(1/20)$: $E(X)=20$, $V(X)=380$. &nbsp; (b) $X$ uniforme en $\\{1,\\dots,20\\}$: $E(X)=10{,}5$, $V(X)=33{,}25$.",
+  pasos:[
+    {t:"Con reposición", h:"Cada intento es independiente con $p=1/20$: $X$ es geométrica, $E(X)=1/p=20$ y $V(X)=(1-p)/p^2=380$."},
+    {t:"Sin reposición", h:"Probar sin repetir es permutar las 20 llaves y mirar la posición de la correcta: $X$ es uniforme en $\\{1,\\dots,20\\}$."},
+    {t:"Momentos de la uniforme", h:"$E(X)=\\tfrac{n+1}{2}=10{,}5$ y $V(X)=\\tfrac{n^2-1}{12}=33{,}25$."},
+    {t:"La comparación", h:"Descartar llaves reduce la esperanza a la mitad y la varianza en un factor 11: además acota el peor caso en 20 intentos, mientras que la geométrica no tiene cota."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"Llaves (n)", min:2, max:40, step:1, val:20} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, K=Math.min(n,20), labs=[], g=[], u=[];
+      for(let k=1;k<=K;k++){ labs.push(String(k));
+        g.push(Math.pow(1-1/n,k-1)/n); u.push(1/n); }
+      hist(ctx,W,H,labs,[{p:g,col:'--accent',lab:'geométrica (sin descartar)'},{p:u,col:'--accent2',lab:'uniforme (descartando)'}],
+           'Ensayos hasta abrir con '+n+' llaves (primeros '+K+' valores)');
+      return {"E geométrica":n.toFixed(1), "V geométrica":((1-1/n)/(1/(n*n))).toFixed(2),
+              "E uniforme":((n+1)/2).toFixed(1), "V uniforme":((n*n-1)/12).toFixed(2)};
+    }
+  }
+},
+{
+  id:"ej16", g:"Simetría, geométrica e indicadores (14–20)", titulo:"16. El tirador y su doble intento",
+  tema:"binomial · lectura del enunciado",
+  enunciado:"Un tirador acierta con probabilidad $3/4$ en el primer disparo, pero si efectúa un segundo disparo tiene probabilidad $9/10$ de acertar. Si realiza este doble intento cada día del mes, ¿cuál es el número esperado de blancos?",
+  resultado:"Cada día es Bernoulli con $p=9/10$, así que en un mes de 30 días $E(B)=30\\cdot 0{,}9=27$ blancos (27,9 si el mes tiene 31 días).",
+  pasos:[
+    {t:"Identificar el ensayo", h:"El «éxito del día» es dar en el blanco en el intento doble, con probabilidad $9/10$ según el enunciado."},
+    {t:"Mes de días independientes", h:"$B\\sim\\mathrm{Bi}(n;\\,0{,}9)$ con $n$ el número de días del mes."},
+    {t:"Esperanza", h:"$E(B)=np=30\\cdot 0{,}9=27$ blancos."},
+    {t:"Coherencia interna", h:"Fallar los dos disparos tiene probabilidad $1/10$; como el primero falla con probabilidad $1/4$, el segundo debe acertar con probabilidad condicional $1-\\tfrac{1/10}{1/4}=\\tfrac{3}{5}$."}
+  ],
+  sim:{
+    controles:[
+      {id:"p1", label:"Acierto del 1.er disparo (%)", min:10, max:95, step:5, val:75},
+      {id:"pd", label:"Acierto del intento doble (%)", min:10, max:99, step:1, val:90},
+      {id:"d", label:"Días del mes", min:28, max:31, step:1, val:30}
+    ],
+    draw:function(ctx,W,H,p){
+      const a=p.p1/100, d=p.pd/100;
+      const p2 = a<1 ? (d-a)/(1-a) : NaN;
+      const labs=[], ps=[]; const n=p.d;
+      for(let k=Math.max(0,Math.round(n*d)-8); k<=Math.min(n,Math.round(n*d)+4); k++){
+        labs.push(String(k)); ps.push(combi(n,k)*Math.pow(d,k)*Math.pow(1-d,n-k));
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(blancos = k)'}],
+           'Blancos en un mes de '+n+' días (p = '+p.pd+'% por día)');
+      T(ctx,'E(B) = '+(n*d).toFixed(2)+' blancos'+(isFinite(p2)&&p2>=0&&p2<=1?'   ·   acierto condicional del 2.º disparo: '+(100*p2).toFixed(1)+'%':'   ·   ¡enunciado incoherente!'),
+        W/2,H-30,{s:14,b:1,a:'center',col:(isFinite(p2)&&p2>=0&&p2<=1)?'--accent2':'--bad'});
+      return {"E(blancos)":(n*d).toFixed(2), "P(2.º | falló el 1.º)":(isFinite(p2)?p2.toFixed(4):'—')};
+    }
+  }
+},
+{
+  id:"ej17", g:"Simetría, geométrica e indicadores (14–20)", titulo:"17. 15 bolillas en 20 cajas",
+  tema:"indicadores · colisiones",
+  enunciado:"Se distribuyen al azar 15 bolillas diferentes en 20 cajas. (a) Hallar el número esperado de cajas vacías. (b) Hallar el número esperado de cajas con 2 o más bolillas.",
+  resultado:"(a) $20\\left(\\tfrac{19}{20}\\right)^{15}\\approx 9{,}2658$. &nbsp; (b) $20\\left[1-\\left(\\tfrac{19}{20}\\right)^{15}-\\tfrac{15}{20}\\left(\\tfrac{19}{20}\\right)^{14}\\right]\\approx 3{,}4191$.",
+  pasos:[
+    {t:"Indicador de caja vacía", h:"$I_i=1$ si la caja $i$ queda vacía; $P(I_i=1)=\\left(\\tfrac{19}{20}\\right)^{15}=0{,}46329$."},
+    {t:"Sumar", h:"$E(\\#\\text{vacías})=20\\cdot 0{,}46329=9{,}2658$: casi la mitad de las cajas queda sin nada."},
+    {t:"Ocupación de una caja", h:"El contenido de la caja $i$ es $\\mathrm{Bi}(15;\\,1/20)$, así que $P(\\ge 2)=1-P(0)-P(1)$."},
+    {t:"Segunda respuesta", h:"$E(\\#\\text{con}\\ge 2)=20[1-0{,}46329-0{,}36576]=3{,}4191$."},
+    {t:"Chequeo", h:"$9{,}2658+3{,}4191+7{,}3151=20$: vacías, con dos o más, y con exactamente una suman todas las cajas."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Bolillas (n)", min:1, max:60, step:1, val:15},
+      {id:"m", label:"Cajas (m)", min:2, max:60, step:1, val:20}
+    ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, m=p.m, q=(m-1)/m;
+      const p0=Math.pow(q,n), p1=n*(1/m)*Math.pow(q,n-1);
+      const vac=m*p0, una=m*p1, dos=m*(1-p0-p1);
+      hist(ctx,W,H,['vacías','con 1','con ≥ 2'],[{p:[vac,una,dos],col:'--accent',lab:'cantidad esperada de cajas'}],
+           n+' bolillas en '+m+' cajas · total = '+m);
+      T(ctx,'suma de las tres = '+(vac+una+dos).toFixed(3)+'  (debe dar '+m+')',W/2,H-30,{s:13,a:'center',col:'--muted'});
+      return {"E(vacías)":vac.toFixed(4), "E(con exactamente 1)":una.toFixed(4), "E(con ≥ 2)":dos.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej18", g:"Simetría, geométrica e indicadores (14–20)", titulo:"18. Esperanza de la hipergeométrica",
+  tema:"indicadores intercambiables",
+  enunciado:"Hallar la esperanza de la v.a. del ejercicio 4(a) cuando se tienen $N$ bolillas en total, $D$ negras, y se extrae una muestra de tamaño $n$ (distribución hipergeométrica).",
+  resultado:"$E(X)=n\\dfrac{D}{N}$: la misma esperanza que la binomial $\\mathrm{Bi}(n;\\,D/N)$.",
+  pasos:[
+    {t:"Descomponer", h:"$X=\\sum_{j=1}^{n}B_j$ con $B_j=1$ si la $j$-ésima extracción es negra."},
+    {t:"Simetría", h:"Antes de mirar nada, todas las posiciones son intercambiables: $P(B_j=1)=D/N$ para todo $j$, no sólo para $j=1$."},
+    {t:"Sumar", h:"$E(X)=\\sum_{j=1}^{n}\\tfrac{D}{N}=n\\tfrac{D}{N}$, sin usar independencia (que no hay)."},
+    {t:"Dónde sí se nota el muestreo", h:"En la varianza: $V(X)=n\\tfrac{D}{N}\\left(1-\\tfrac{D}{N}\\right)\\tfrac{N-n}{N-1}$, con el factor de corrección por población finita."}
+  ],
+  sim:{
+    controles:[
+      {id:"N", label:"Población N", min:5, max:200, step:5, val:10},
+      {id:"D", label:"Negras D (% de N)", min:5, max:95, step:5, val:30},
+      {id:"n", label:"Muestra n (% de N)", min:5, max:100, step:5, val:30}
+    ],
+    draw:function(ctx,W,H,p){
+      const N=p.N, D=Math.max(1,Math.round(N*p.D/100)), n=Math.max(1,Math.round(N*p.n/100));
+      const pp=D/N, E=n*pp;
+      const Vb=n*pp*(1-pp), corr=(N>1)?(N-n)/(N-1):0, Vh=Vb*corr;
+      duelo(ctx,W,H,
+        {v:Vb,lab:'Var binomial (con reposición) = n p (1−p)',txt:Vb.toFixed(4),col:'--accent2'},
+        {v:Vh,lab:'Var hipergeométrica = n p (1−p) (N−n)/(N−1)',txt:Vh.toFixed(4),col:'--accent'});
+      T(ctx,'E(X) = n·D/N = '+E.toFixed(4)+' en ambos casos',W/2,300,{s:15,b:1,a:'center',col:'--warn'});
+      T(ctx,'N = '+N+',  D = '+D+',  n = '+n,W/2,326,{s:12.5,a:'center',col:'--muted'});
+      return {"E(X)":E.toFixed(4), "Factor de corrección":corr.toFixed(4), "Var hipergeom.":Vh.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej19", g:"Simetría, geométrica e indicadores (14–20)", titulo:"19. La promoción GRATIS",
+  tema:"coleccionista de figuritas",
+  enunciado:"Cada compra entrega una letra al azar de la palabra GRATIS; al reunir las seis letras el cliente gana una remera. ¿Cuántas compras se espera que haga hasta conseguirla?",
+  resultado:"$E(T)=6H_6=6\\left(1+\\tfrac12+\\tfrac13+\\tfrac14+\\tfrac15+\\tfrac16\\right)=\\tfrac{147}{10}=14{,}7$ compras.",
+  pasos:[
+    {t:"Descomponer la espera", h:"$T=T_1+\\cdots+T_6$, donde $T_i$ cuenta las compras para conseguir la $i$-ésima letra nueva teniendo ya $i-1$."},
+    {t:"Cada tramo es geométrico", h:"Con $i-1$ letras, una compra es «nueva» con probabilidad $\\tfrac{7-i}{6}$, así que $E(T_i)=\\tfrac{6}{7-i}$."},
+    {t:"Sumar la serie armónica", h:"$E(T)=6\\left(\\tfrac11+\\tfrac12+\\cdots+\\tfrac16\\right)=6\\cdot\\tfrac{49}{20}=14{,}7$."},
+    {t:"Dónde está el costo", h:"La última letra sola cuesta 6 compras esperadas: el 41% del total. En general $E(T)=mH_m\\approx m\\ln m$."},
+    {t:"Cuidado", h:"Si la palabra tuviera letras repetidas (por ejemplo, SORTEO), las probabilidades dejarían de ser uniformes y el cálculo cambia."}
+  ],
+  sim:{
+    controles:[ {id:"m", label:"Letras distintas (m)", min:2, max:30, step:1, val:6} ],
+    acciones:[
+      {label:"Simular 2000 clientes", fn:function(st,paint){
+        const m=st._m||6; let s=0, hist2={};
+        for(let r=0;r<2000;r++){
+          const vis={}; let cnt=0, t=0;
+          while(cnt<m){ const k=Math.floor(Math.random()*m); if(!vis[k]){vis[k]=1;cnt++;} t++; }
+          s+=t; hist2[t]=(hist2[t]||0)+1;
+        }
+        st.mc=s/2000; st.n=(st.n||0)+2000; paint();
+      }},
+      {label:"Reiniciar", fn:function(st,paint){ st.mc=null; st.n=0; paint(); }}
+    ],
+    draw:function(ctx,W,H,p,st){
+      const m=p.m; st._m=m;
+      let E=0, tramos=[];
+      for(let i=1;i<=m;i++){ const e=m/(m-i+1); E+=e; tramos.push(e); }
+      const padL=60, y0=H-70, hh=y0-60, wd=W-padL-30, mx=Math.max.apply(null,tramos);
+      const bw=wd/m;
+      tramos.forEach((e,i)=>{
+        const h=hh*e/mx;
+        ctx.fillStyle=alpha(C(i===m-1?'--warn':'--accent'),.9);
+        RR(ctx,padL+i*bw+2,y0-h,bw-4,h,4); ctx.fill();
+        if(m<=12) T(ctx,e.toFixed(2),padL+i*bw+bw/2,y0-h-5,{s:10.5,a:'center',col:'--muted'});
+        if(m<=12) T(ctx,'letra '+(i+1),padL+i*bw+bw/2,y0+16,{s:11,a:'center',col:'--muted'});
+      });
+      T(ctx,'Compras esperadas para conseguir cada letra nueva (la última, en naranja, es la más cara)',padL-40,30,{s:12.5,col:'--muted'});
+      T(ctx,'E(T) = m·H_m = '+E.toFixed(3)+(st.mc?('   ·   Monte Carlo ('+st.n+' clientes): '+st.mc.toFixed(3)):''),
+        W/2,H-24,{s:14,b:1,a:'center',col:'--accent2'});
+      return {"E(T) exacta":E.toFixed(4), "Última letra sola":tramos[m-1].toFixed(3),
+              "Monte Carlo":(st.mc?st.mc.toFixed(3):'—'), "m·ln m":(m*Math.log(m)).toFixed(3)};
+    }
+  }
+},
+{
+  id:"ej20", g:"Simetría, geométrica e indicadores (14–20)", titulo:"20. Libros nuevos y usados",
+  tema:"función de X · stock limitado",
+  enunciado:"El 30% de los estudiantes quiere un ejemplar nuevo (\\$100) y el 70% uno usado (\\$70). La librería tiene 4 nuevos y 20 usados. ¿Cuál es el valor esperado del ingreso por la venta de los próximos 7 ejemplares?",
+  resultado:"$h(X)=490+30\\min(X,4)$ con $X\\sim\\mathrm{Bi}(7;0{,}3)$, y $E[h(X)]=490+30(2{,}067195)=\\$552{,}02$.",
+  pasos:[
+    {t:"La variable", h:"$X\\sim\\mathrm{Bi}(7;\\,0{,}3)$ cuenta cuántos de los 7 compradores *quieren* un ejemplar nuevo."},
+    {t:"El stock corta", h:"Sólo hay 4 nuevos, así que se venden $\\min(X,4)$ nuevos y $7-\\min(X,4)$ usados (de los 20 disponibles, de sobra)."},
+    {t:"Escribir el ingreso", h:"$h(X)=100\\min(X,4)+70[7-\\min(X,4)]=490+30\\min(X,4)$."},
+    {t:"Esperar", h:"$E[\\min(X,4)]=2{,}067195$, luego $E[h(X)]=490+62{,}02=552{,}02$ pesos."},
+    {t:"Cuánto cuesta el faltante", h:"Sin límite de stock sería $490+30E(X)=553$: la restricción cuesta apenas \\$0{,}98, porque $P(X\\ge 5)=0{,}029$."}
+  ],
+  sim:{
+    controles:[
+      {id:"pp", label:"% que prefiere nuevo", min:5, max:95, step:5, val:30},
+      {id:"stk", label:"Ejemplares nuevos en stock", min:0, max:7, step:1, val:4},
+      {id:"n", label:"Compradores", min:1, max:12, step:1, val:7}
+    ],
+    draw:function(ctx,W,H,p){
+      const q=p.pp/100, n=p.n, s=Math.min(p.stk,n), labs=[], ps=[];
+      let E=0, Esin=0;
+      for(let x=0;x<=n;x++){
+        const pr=combi(n,x)*Math.pow(q,x)*Math.pow(1-q,n-x);
+        labs.push(String(x)); ps.push(pr);
+        E += pr*(100*Math.min(x,s)+70*(n-Math.min(x,s)));
+        Esin += pr*(100*x+70*(n-x));
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(quieren nuevo = x)'}],
+           'Compradores que prefieren un ejemplar nuevo (n='+n+', p='+p.pp+'%)');
+      T(ctx,'Ingreso esperado: $'+E.toFixed(2)+'   ·   sin límite de stock: $'+Esin.toFixed(2)+'   ·   costo del faltante: $'+(Esin-E).toFixed(2),
+        W/2,H-28,{s:13.5,b:1,a:'center',col:'--accent2'});
+      return {"Ingreso esperado":'$'+E.toFixed(2), "Sin restricción":'$'+Esin.toFixed(2), "Costo del faltante":'$'+(Esin-E).toFixed(2)};
+    }
+  }
+},
+
+/* ─────────────── ADICIONALES ─────────────── */
+{
+  id:"ad1", g:"Adicionales", titulo:"A1. Las cajas de fósforos de Banach",
+  tema:"caminata simétrica · clásico",
+  enunciado:"Banach llevaba dos cajas de fósforos, una en cada bolsillo, y al necesitar fósforos tomaba una al azar. Al terminar una caja: ¿cuál es la distribución del número de fósforos que quedan en la otra?",
+  resultado:"$P(K=k)=\\binom{2n-k}{n}\\left(\\tfrac12\\right)^{2n-k}$ para $k=0,1,\\dots,n$, donde $n$ es la cantidad inicial por caja.",
+  pasos:[
+    {t:"El momento del descubrimiento", h:"«Terminar una caja» significa elegirla y encontrarla vacía: para eso ya sacó sus $n$ fósforos y la elige una vez más."},
+    {t:"Contar la secuencia", h:"Si quedan $k$ en la otra, hubo $n$ elecciones de la caja agotada y $n-k$ de la otra, más la elección final fallida: $2n-k+1$ elecciones."},
+    {t:"Combinatoria", h:"Hay $\\binom{2n-k}{n}$ órdenes posibles para las primeras $2n-k$, cada secuencia con probabilidad $(1/2)^{2n-k+1}$, y 2 opciones para cuál caja se agota."},
+    {t:"El resultado y su sorpresa", h:"$P(K=0)=P(K=1)$ siempre, y los valores chicos son los más probables: pese a la simetría del procedimiento, las cajas se agotan casi juntas."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"Fósforos por caja (n)", min:2, max:40, step:1, val:10} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, labs=[], ps=[]; let E=0;
+      for(let k=0;k<=n;k++){ const v=combi(2*n-k,n)*Math.pow(0.5,2*n-k); labs.push(String(k)); ps.push(v); E+=k*v; }
+      const paso=Math.max(1,Math.ceil(labs.length/22));
+      const L=[], P2=[];
+      for(let i=0;i<labs.length;i+=paso){ L.push(labs[i]); P2.push(ps[i]); }
+      hist(ctx,W,H,L,[{p:P2,col:'--warn',lab:'P(K = k)'}],
+           'Fósforos restantes en la otra caja (n = '+n+' por caja)');
+      return {"P(K=0)":ps[0].toFixed(5), "P(K=1)":ps[1].toFixed(5), "E(K)":E.toFixed(4), "Suma":ps.reduce((a,b)=>a+b,0).toFixed(6)};
+    }
+  }
+},
+{
+  id:"ad2", g:"Adicionales", titulo:"A2. Figuritas distintas por sobre",
+  tema:"indicadores · repeticiones",
+  enunciado:"Un álbum contiene 30 figuritas distintas. Si un chico compra sobres de 4 figuritas no necesariamente distintas, ¿cuál es el valor esperado de figuritas distintas por sobre?",
+  resultado:"$E(D)=30\\left[1-\\left(\\tfrac{29}{30}\\right)^4\\right]=\\tfrac{102719}{27000}\\approx 3{,}8044$.",
+  pasos:[
+    {t:"Indicadores por figurita", h:"$D=\\sum_{i=1}^{30}I_i$, con $I_i=1$ si la figurita $i$ aparece en el sobre."},
+    {t:"Probabilidad de aparecer", h:"$P(I_i=1)=1-\\left(\\tfrac{29}{30}\\right)^4=0{,}126814$: complemento de que las 4 sean otras."},
+    {t:"Sumar", h:"$E(D)=30\\cdot 0{,}126814=3{,}8044$ de las 4 figuritas del sobre."},
+    {t:"Lectura", h:"Se «desperdicia» en promedio $0{,}196$ de figurita por sobre. Con un álbum chico el efecto sería mucho mayor."}
+  ],
+  sim:{
+    controles:[
+      {id:"m", label:"Figuritas del álbum (m)", min:4, max:120, step:2, val:30},
+      {id:"k", label:"Figuritas por sobre (k)", min:1, max:12, step:1, val:4}
+    ],
+    draw:function(ctx,W,H,p){
+      const m=p.m, k=p.k, pi=1-Math.pow((m-1)/m,k), E=m*pi;
+      bar(ctx,70,110,W-160,30,E/k,'--accent2','Figuritas distintas esperadas (de '+k+')',E.toFixed(4));
+      bar(ctx,70,200,W-160,30,(k-E)/k,'--bad','Repetidas dentro del sobre',(k-E).toFixed(4));
+      T(ctx,'Álbum de '+m+' figuritas · sobres de '+k,W/2,300,{s:14,b:1,a:'center',col:'--muted'});
+      return {"E(distintas)":E.toFixed(4), "Repetidas":(k-E).toFixed(4), "Aprovechamiento":(100*E/k).toFixed(2)+'%'};
+    }
+  }
+},
+{
+  id:"ad3", g:"Adicionales", titulo:"A3. Máximo de tres extracciones",
+  tema:"función de distribución · máximo",
+  enunciado:"Se extraen 3 números con sustitución entre los números 1, 1, 1, 2, 2, 3, 3, 4, 5. Hallar la distribución de probabilidad del máximo extraído.",
+  resultado:"$P(M=1)=\\tfrac{1}{27}$, $P(M=2)=\\tfrac{98}{729}$, $P(M=3)=\\tfrac{218}{729}$, $P(M=4)=\\tfrac{169}{729}$, $P(M=5)=\\tfrac{217}{729}$; $E(M)\\approx 3{,}6187$.",
+  pasos:[
+    {t:"El truco del máximo", h:"Para un máximo conviene la función de distribución: $P(M\\le v)=P(\\text{las 3 extracciones}\\le v)=F(v)^3$ por independencia."},
+    {t:"F acumulada de la lista", h:"Con frecuencias $3,2,2,1,1$ sobre 9: $F(1)=\\tfrac39$, $F(2)=\\tfrac59$, $F(3)=\\tfrac79$, $F(4)=\\tfrac89$, $F(5)=1$."},
+    {t:"Diferenciar", h:"$P(M=v)=F(v)^3-F(v-1)^3$, lo que da los cinco valores del resultado."},
+    {t:"La sorpresa", h:"El 5, que aparece una sola vez en la lista, es el máximo en casi el 30% de los casos: le alcanza con salir una vez en tres intentos."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Extracciones", min:1, max:8, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const cnt=[3,2,2,1,1]; let cum=[], s=0;
+      cnt.forEach(c=>{ s+=c; cum.push(s/9); });
+      const labs=['1','2','3','4','5'], ps=[]; let E=0;
+      for(let i=0;i<5;i++){
+        const v=Math.pow(cum[i],p.n)-(i?Math.pow(cum[i-1],p.n):0);
+        ps.push(v); E+=(i+1)*v;
+      }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent'},{p:cnt.map(c=>c/9),col:'--muted',lab:'frecuencia en la lista'}],
+           'Máximo de '+p.n+' extracciones con sustitución');
+      return {"E(M)":E.toFixed(4), "P(M=5)":ps[4].toFixed(4), "P(M=1)":ps[0].toFixed(5)};
+    }
+  }
+},
+{
+  id:"ad4", g:"Adicionales", titulo:"A4. El dado desbalanceado",
+  tema:"geométrica truncada · puntaje",
+  enunciado:"Se arroja un dado hasta obtener un número $\\ge 4$; $X$ es el número de tiros. El puntaje es $4-X$ si $1\\le X\\le 3$ y $0$ en caso contrario. Los 3 números más bajos tienen el doble de probabilidad que los otros. ¿Cuál es el puntaje esperado?",
+  resultado:"$X\\sim\\mathrm{Geo}(1/3)$ y $E(S)=3\\cdot\\tfrac13+2\\cdot\\tfrac29+1\\cdot\\tfrac{4}{27}=\\tfrac{43}{27}\\approx 1{,}5926$.",
+  pasos:[
+    {t:"Calibrar el dado", h:"Si cada número alto tiene probabilidad $t$, los bajos tienen $2t$ y $3(2t)+3t=9t=1$: $t=\\tfrac19$."},
+    {t:"Probabilidad de éxito", h:"$p=P(\\text{tiro}\\ge 4)=3\\cdot\\tfrac19=\\tfrac13$, así que $X$ es geométrica de parámetro $1/3$."},
+    {t:"La suma se trunca sola", h:"$S=0$ para $X\\ge 4$, así que $E(S)=3P(X=1)+2P(X=2)+1\\cdot P(X=3)$: sólo tres términos."},
+    {t:"El resultado", h:"$E(S)=1+\\tfrac49+\\tfrac4{27}=\\tfrac{43}{27}\\approx 1{,}59$, menor que 2 aunque el máximo sea 3: el 44,4% de las partidas termina en 0."}
+  ],
+  sim:{
+    controles:[
+      {id:"r", label:"Razón bajos / altos", min:1, max:6, step:1, val:2},
+      {id:"u", label:"Umbral de éxito (≥ u)", min:2, max:6, step:1, val:4}
+    ],
+    draw:function(ctx,W,H,p){
+      const u=p.u, altos=7-u, bajos=6-altos, r=p.r;
+      const t=1/(bajos*r+altos), pe=altos*t;
+      const labs=[], ps=[]; let E=0;
+      for(let k=1;k<=6;k++){ const v=Math.pow(1-pe,k-1)*pe; labs.push('X='+k); ps.push(v);
+        if(k<=3) E+=(4-k)*v; }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(X = k)'}],
+           'Tiros hasta el primer éxito (p = '+pe.toFixed(4)+')');
+      T(ctx,'Puntaje esperado E(S) = '+E.toFixed(4)+'   ·   P(puntaje 0) = '+Math.pow(1-pe,3).toFixed(4),
+        W/2,H-28,{s:14,b:1,a:'center',col:'--accent2'});
+      return {"p de éxito":pe.toFixed(4), "E(S)":E.toFixed(4), "P(S=0)":Math.pow(1-pe,3).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ad5", g:"Adicionales", titulo:"A5. Las seis cajas de pastillas",
+  tema:"Poisson-binomial · indicadores",
+  enunciado:"Se tienen 6 cajas de 10 pastillas; la caja $i$ tiene $i$ de menta y $10-i$ de limón. De cada caja se extrae una pastilla al azar. Sea $X$ la cantidad de mentas extraídas: calcular $E(X)$.",
+  resultado:"$E(X)=\\sum_{i=1}^{6}\\tfrac{i}{10}=\\tfrac{21}{10}=2{,}1$ (y $V(X)=2{,}1-0{,}91=1{,}19$).",
+  pasos:[
+    {t:"Indicador por caja", h:"$X=\\sum_{i=1}^{6}I_i$ con $I_i=1$ si la pastilla de la caja $i$ es de menta, y $P(I_i=1)=\\tfrac{i}{10}$."},
+    {t:"Sumar", h:"$E(X)=\\tfrac{1+2+3+4+5+6}{10}=\\tfrac{21}{10}=2{,}1$."},
+    {t:"No es binomial", h:"Los $I_i$ son independientes pero con parámetros distintos: $X$ es Poisson-binomial, no $\\mathrm{Bi}(6;p)$."},
+    {t:"La varianza sí cambia", h:"$V(X)=\\sum p_i(1-p_i)=2{,}1-0{,}91=1{,}19$, menor que la de una binomial con la misma media ($6\\cdot 0{,}35\\cdot 0{,}65=1{,}365$)."}
+  ],
+  sim:{
+    controles:[ {id:"m", label:"Cantidad de cajas", min:2, max:10, step:1, val:6} ],
+    draw:function(ctx,W,H,p){
+      const m=p.m, ps=[]; for(let i=1;i<=m;i++) ps.push(i/10>1?1:i/10);
+      // convolución de Bernoulli independientes
+      let d=[1];
+      ps.forEach(q=>{ const nd=new Array(d.length+1).fill(0);
+        d.forEach((v,k)=>{ nd[k]+=v*(1-q); nd[k+1]+=v*q; }); d=nd; });
+      let E=0,E2=0; d.forEach((v,k)=>{E+=k*v;E2+=k*k*v;});
+      const pm=E/m;
+      hist(ctx,W,H,d.map((_,k)=>String(k)),
+        [{p:d,col:'--accent2',lab:'Poisson-binomial (real)'},
+         {p:d.map((_,k)=>combi(m,k)*Math.pow(pm,k)*Math.pow(1-pm,m-k)),col:'--muted',lab:'binomial con la misma media'}],
+        'Pastillas de menta extraídas de '+m+' cajas');
+      return {"E(X)":E.toFixed(4), "V(X) real":(E2-E*E).toFixed(4), "V binomial equiv.":(m*pm*(1-pm)).toFixed(4)};
+    }
+  }
+}
+
+];
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Probabilidades y Estadística Matemática · Licenciatura en Matemática · FCEx–UNCPBA · Práctica 4</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

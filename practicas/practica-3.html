@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 3 — Probabilidad condicional, independencia y Bayes</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.circuito{display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;
+          margin:16px 0 6px;font-size:13px}
+.circuito .term{color:var(--muted);font-size:12px}
+.circuito .cable{flex:0 0 26px;height:2px;background:var(--line)}
+.circuito .bloque{border:1px dashed var(--line);border-radius:10px;padding:10px 12px 8px;position:relative}
+.circuito .bloque > .rot{position:absolute;top:-9px;left:12px;background:var(--panel);
+                         padding:0 6px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.circuito .rama{display:flex;align-items:center;gap:8px;margin:6px 0}
+.circuito .disp{background:color-mix(in srgb,var(--accent) 18%,transparent);
+                border:1px solid var(--accent);border-radius:8px;padding:5px 10px;white-space:nowrap}
+.circuito .disp b{font-weight:600}
+.circuito .par{display:flex;flex-direction:column;justify-content:center}
+.circuito .op{color:var(--muted);font-size:11px;text-align:center;margin:2px 0}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DATOS — Práctica 3: Probabilidad condicional, Bayes, independencia.
+   ══════════════════════════════════════════════════════════════════════ */
+function barras(ctx,W,items,y0){ /* items: [{lab,val,frac,col}] */
+  const x=70, w=W-260; let y=y0||70;
+  items.forEach(it=>{ bar(ctx,x,y,w,24,it.frac,it.col||'--accent',it.lab,it.val); y+=64; });
+}
+const EJERCICIOS = [
+{
+  id:"ej1", g:"Ejercicios", titulo:"1. Biblioteca: cinco lectores",
+  tema:"binomial · independencia",
+  enunciado:"Un lector elige Matemática con probabilidad $0,7$ e Ingeniería con $0,3$. Llegan cinco lectores independientes. (a) $P(\\text{todos la misma clase})$; (b) $P(\\text{dos de Matemática y tres de Ingeniería})$.",
+  resultado:"(a) $0,7^5+0,3^5=0,1705$. \\quad (b) $\\binom{5}{2}0,7^2\\,0,3^3=0,1323$.",
+  pasos:[
+    {t:"Modelo",h:"Cada lector es un ensayo de Bernoulli independiente: $X\\sim\\mathrm{Bin}(5,\\,p)$ con $p=0,7$."},
+    {t:"Todos iguales",h:"Sucesos excluyentes: $P(X=5)+P(X=0)=p^5+(1-p)^5$."},
+    {t:"Dos y tres",h:"$P(X=2)=\\binom{5}{2}p^2(1-p)^3$."},
+    {t:"Lectura",h:"Con $p=0,7$ los dos valores quedan cerca: el factor $(1-p)^3$ penaliza los arreglos con mucha Ingeniería."}
+  ],
+  sim:{
+    controles:[{id:"p",label:"P(Matemática) ×100",min:5,max:95,step:1,val:70}],
+    draw:function(ctx,W,H,pp){
+      const p=pp.p/100;
+      const same=Math.pow(p,5)+Math.pow(1-p,5);
+      const dos=10*p*p*Math.pow(1-p,3);
+      T(ctx,'Al mover $P$(Matemática) cambian las dos probabilidades',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(todos la misma clase)',val:same.toFixed(4),frac:same,col:'--accent'},
+        {lab:'P(dos Mat. y tres Ing.)',val:dos.toFixed(4),frac:dos,col:'--accent2'}
+      ],90);
+      return {"P(misma clase)":same.toFixed(4),"P(2 y 3)":dos.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej2", g:"Ejercicios", titulo:"2. Al menos un 6 en cinco dados",
+  tema:"condicional · complemento",
+  enunciado:"Se arrojan $n$ dados equilibrados. Sabiendo que salió al menos un $6$, ¿cuál es $P(\\text{dos o más } 6)$? (el enunciado usa $n=5$).",
+  resultado:"$\\dfrac{P(\\ge 2)}{P(\\ge 1)}=\\dfrac{1526}{4651}\\approx 0,3281$.",
+  pasos:[
+    {t:"Modelo",h:"$Y\\sim\\mathrm{Bin}(n,1/6)$ seises. Se pide $P(Y\\ge 2\\mid Y\\ge 1)$."},
+    {t:"Inclusión",h:"Como $\\{Y\\ge2\\}\\subset\\{Y\\ge1\\}$, el condicional es el cociente de probabilidades."},
+    {t:"Complemento",h:"$P(Y\\ge1)=1-(5/6)^n$ y $P(Y\\ge2)=1-(5/6)^n-n\\tfrac16(5/6)^{n-1}$."},
+    {t:"Cálculo",h:"Para $n=5$: $1526/4651\\approx0,3281$."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Cantidad de dados n",min:2,max:15,step:1,val:5}],
+    draw:function(ctx,W,H,pp){
+      const n=pp.n, q=Math.pow(5/6,n);
+      const p1=1-q, p2=1-q-n*(1/6)*Math.pow(5/6,n-1);
+      const cond=p2/p1;
+      T(ctx,'El condicional crece con la cantidad de dados',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(al menos un 6)',val:p1.toFixed(4),frac:p1,col:'--accent'},
+        {lab:'P(dos o más 6)',val:p2.toFixed(4),frac:p2,col:'--accent2'},
+        {lab:'P(≥2 | ≥1)',val:cond.toFixed(4),frac:cond,col:'--warn'}
+      ],90);
+      return {"n":n,"P(≥2 | ≥1)":cond.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej3", g:"Ejercicios", titulo:"3. Dos tubos, uno funciona",
+  tema:"condicional · sin reposición",
+  enunciado:"Caja con $4$ tubos malos y $6$ buenos. Se sacan dos; se prueba uno y funciona. ¿Cuál es la probabilidad de que el otro también funcione?",
+  resultado:"$\\dfrac{5}{9}\\approx 0,5556$.",
+  pasos:[
+    {t:"Planteo",h:"Extracción ordenada: 'el probado' y 'el otro'. Se pide $P(\\text{otro bueno}\\mid\\text{probado bueno})$."},
+    {t:"Sin reposición",h:"Probado bueno deja $9$ tubos, $5$ buenos."},
+    {t:"Resultado",h:"$P=5/9$."},
+    {t:"Lectura",h:"Saber que uno es bueno 'gasta' un tubo bueno: baja de $6/10$ a $5/9$."}
+  ],
+  sim:{
+    controles:[{id:"buenos",label:"Tubos buenos",min:1,max:9,step:1,val:6}],
+    acciones:[{label:"Simular 20.000 pares",fn:function(st,paint){
+      const b=st._b||6, tot=10; let num=0,den=0;
+      const rng=LCG(12345);
+      for(let i=0;i<20000;i++){
+        const box=[]; for(let k=0;k<tot;k++) box.push(k<b?1:0);
+        // sacar dos sin reposicion
+        let i1=Math.floor(rng()*tot); let i2; do{i2=Math.floor(rng()*tot);}while(i2===i1);
+        const probado=Math.floor(rng()*2)===0?box[i1]:box[i2];
+        const otro=(probado===box[i1])?box[i2]:box[i1];
+        if(probado===1){den++; if(otro===1)num++;}
+      }
+      st.emp=den?num/den:0; st.den=den; paint();
+    }}],
+    draw:function(ctx,W,H,pp,st){
+      st._b=pp.buenos;
+      const b=pp.buenos, teor=(b-1)/(10-1);
+      T(ctx,'Teórico $(b-1)/9$ vs. frecuencia simulada',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'Teórico  (b−1)/9',val:teor.toFixed(4),frac:teor,col:'--accent'},
+        {lab:'Simulado (condicional)',val:(st.emp!==undefined?st.emp.toFixed(4):'—'),frac:st.emp||0,col:'--accent2'}
+      ],110);
+      return {"Teórico":teor.toFixed(4),"Simulado":st.emp!==undefined?st.emp.toFixed(4):'—'};
+    }
+  }
+},
+{
+  id:"ej4", g:"Ejercicios", titulo:"4. Trasvase entre dos cajas",
+  tema:"probabilidad total · secuencial",
+  enunciado:"Caja I: $6$ rojas, $4$ verdes. Caja II: $7$ rojas, $3$ verdes. Se pasa una bolilla de I a II y luego una de II a I. (a) $P(\\text{roja de I y roja de II})$; (b) $P(\\text{la caja I termine idéntica})$.",
+  resultado:"(a) $\\dfrac{24}{55}\\approx0,4364$. \\quad (b) $\\dfrac{32}{55}\\approx0,5818$.",
+  pasos:[
+    {t:"Etapa 1",h:"Sale roja de I con $6/10$; entonces II pasa a $8$ rojas y $3$ verdes."},
+    {t:"(a)",h:"$P=\\tfrac{6}{10}\\cdot\\tfrac{8}{11}=24/55$."},
+    {t:"(b) condición",h:"La caja I vuelve a $6$R,$4$V si la devuelta es del mismo color que la enviada."},
+    {t:"(b) suma",h:"$\\tfrac{6}{10}\\tfrac{8}{11}+\\tfrac{4}{10}\\tfrac{4}{11}=32/55$."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[{label:"Simular 50.000 procesos",fn:function(st,paint){
+      const rng=LCG(777); let a=0,b=0,N=50000;
+      for(let i=0;i<N;i++){
+        const x=(Math.floor(rng()*10)<6)?'R':'V';           // de I
+        const II=['R','R','R','R','R','R','R','V','V','V',x]; // 7R3V + x = 11
+        const y=II[Math.floor(rng()*11)];
+        if(x==='R'&&y==='R')a++;
+        if(x===y)b++;
+      }
+      st.a=a/N; st.b=b/N; paint();
+    }}],
+    draw:function(ctx,W,H,pp,st){
+      T(ctx,'Comparación teórico vs. simulado',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'(a) teórico 24/55',val:(24/55).toFixed(4),frac:24/55,col:'--accent'},
+        {lab:'(a) simulado',val:(st.a!==undefined?st.a.toFixed(4):'—'),frac:st.a||0,col:'--accent2'},
+        {lab:'(b) teórico 32/55',val:(32/55).toFixed(4),frac:32/55,col:'--accent'},
+        {lab:'(b) simulado',val:(st.b!==undefined?st.b.toFixed(4):'—'),frac:st.b||0,col:'--accent2'}
+      ],85);
+      return {"(a)":(24/55).toFixed(4),"(b)":(32/55).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej5", g:"Ejercicios", titulo:"5. Tres tiradores, dos impactos",
+  tema:"Bayes",
+  enunciado:"Tres tiradores aciertan con probabilidades $1/2$, $2/3$ y $3/4$, independientes. Se producen dos impactos. ¿Cuál es la probabilidad de que el que erró haya sido el primero?",
+  resultado:"$\\dfrac{6}{11}\\approx 0,5455$.",
+  pasos:[
+    {t:"Evento observado",h:"Dos impactos $=$ exactamente uno erró."},
+    {t:"Casos",h:"$P(F_1)=\\tfrac12\\tfrac23\\tfrac34=\\tfrac{6}{24}$, $P(F_2)=\\tfrac{3}{24}$, $P(F_3)=\\tfrac{2}{24}$."},
+    {t:"Bayes",h:"$P(F_1\\mid 2)=\\tfrac{6}{6+3+2}=\\tfrac{6}{11}$."},
+    {t:"Lectura",h:"El más torpe ($p=1/2$) es el sospechoso más probable de haber fallado."}
+  ],
+  sim:{
+    controles:[],
+    draw:function(ctx,W,H){
+      T(ctx,'Posterior de quién erró, dado que hubo dos impactos',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'erró el 1.º (p=1/2)',val:(6/11).toFixed(4),frac:6/11,col:'--warn'},
+        {lab:'erró el 2.º (p=2/3)',val:(3/11).toFixed(4),frac:3/11,col:'--accent'},
+        {lab:'erró el 3.º (p=3/4)',val:(2/11).toFixed(4),frac:2/11,col:'--accent'}
+      ],85);
+      return {"P(erró 1.º)":(6/11).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej6", g:"Ejercicios", titulo:"6. Primera falla en la prueba k",
+  tema:"orden · conteo",
+  enunciado:"$100$ componentes, $3$ descompuestos. Se prueban al azar uno por uno hasta hallar uno malo. Hallar $P(\\text{ocurre en la prueba }k)$.",
+  resultado:"$P(K=k)=\\dfrac{3\\,(100-k)(99-k)}{100\\cdot 99\\cdot 98},\\ k=1,\\dots,98$.",
+  pasos:[
+    {t:"Reformulación",h:"Ubicar los $3$ malos al azar entre $100$ posiciones; $K$ = posición del primero."},
+    {t:"Conteo",h:"$P(K=k)=\\binom{100-k}{2}/\\binom{100}{3}$: los otros dos malos quedan después de $k$."},
+    {t:"Forma cerrada",h:"$=\\dfrac{3(100-k)(99-k)}{100\\cdot99\\cdot98}$."},
+    {t:"Chequeo",h:"$P(K=1)=3/100=0,03$."}
+  ],
+  sim:{
+    controles:[{id:"k",label:"Prueba k",min:1,max:98,step:1,val:1}],
+    draw:function(ctx,W,H,pp){
+      const C3=100*99*98/6;
+      const P=k=>((100-k)*(99-k)/2)/C3;
+      // curva
+      const x0=60,x1=W-40,y0=H-40,y1=50, kmax=98;
+      const px=k=>x0+(x1-x0)*(k-1)/(kmax-1);
+      const maxP=P(1), py=v=>y0-(y0-y1)*v/maxP;
+      ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.stroke();
+      ctx.strokeStyle=C('--accent');ctx.lineWidth=2;ctx.beginPath();
+      for(let k=1;k<=kmax;k++){const X=px(k),Y=py(P(k));k===1?ctx.moveTo(X,Y):ctx.lineTo(X,Y);}
+      ctx.stroke();
+      const k=pp.k;
+      ctx.fillStyle=C('--warn');ctx.beginPath();ctx.arc(px(k),py(P(k)),6,0,7);ctx.fill();
+      T(ctx,'P(K=k) es decreyente en k',W/2,30,{s:13,a:'center',col:'--muted'});
+      T(ctx,'k',x1,y0+18,{s:12,col:'--muted'});
+      return {"k":k,"P(K=k)":P(k).toFixed(5)};
+    }
+  }
+},
+{
+  id:"ej7", g:"Ejercicios", titulo:"7. Circuito en serie y paralelo",
+  tema:"independencia \u00b7 confiabilidad",
+  enunciado:"El circuito trabaja si y s\u00f3lo si existe un camino de dispositivos en funcionamiento de izquierda a derecha; los dispositivos fallan de forma independiente. Calcular la probabilidad de que el circuito trabaje.<div class=\"circuito\"><span class=\"term\">entrada</span><span class=\"cable\"></span><div class=\"bloque\"><span class=\"rot\">Bloque I</span><div class=\"rama\"><span class=\"disp\"><b>D<sub>1</sub></b> · 0,01</span><span class=\"cable\"></span><span class=\"disp\"><b>D<sub>2</sub></b> · 0,01</span></div><div class=\"op\">— en paralelo con —</div><div class=\"rama\"><span class=\"disp\"><b>D<sub>3</sub></b> · 0,1</span></div></div><span class=\"cable\"></span><div class=\"bloque\"><span class=\"rot\">Bloque II</span><div class=\"rama\"><span class=\"disp\"><b>D<sub>4</sub></b> · 0,1</span></div><div class=\"op\">— en paralelo con —</div><div class=\"rama\"><span class=\"disp\"><b>D<sub>5</sub></b> · 0,1</span></div></div><span class=\"cable\"></span><span class=\"term\">salida</span></div><div style=\"text-align:center;color:var(--muted);font-size:12px\">El número de cada dispositivo es su <b>probabilidad de falla</b>. Los dos bloques van en serie.</div>",
+  resultado:"$P(\\text{el circuito trabaje})=0,99801\\cdot 0,99=0,9880299\\approx 0,9880$.",
+  pasos:[
+    {t:"Reglas",h:"Con $p_i$ la probabilidad de falla y $q_i=1-p_i$ la de funcionamiento: en <b>serie</b> $q=\\prod q_i$; en <b>paralelo</b> $p=\\prod p_i$."},
+    {t:"Rama superior (serie)",h:"$q_{\\text{sup}}=(1-0,01)^2=0,9801$, luego $p_{\\text{sup}}=0,0199$."},
+    {t:"Bloque I (paralelo)",h:"$p_{\\mathrm{I}}=0,0199\\cdot 0,1=0,00199$, luego $q_{\\mathrm{I}}=0,99801$."},
+    {t:"Bloque II (paralelo)",h:"$p_{\\mathrm{II}}=0,1\\cdot 0,1=0,01$, luego $q_{\\mathrm{II}}=0,99$."},
+    {t:"Bloques en serie",h:"$P(\\text{funciona})=q_{\\mathrm{I}}\\,q_{\\mathrm{II}}=0,99801\\cdot0,99=0,9880299$."},
+    {t:"Lectura",h:"El bloque II es el cuello de botella: aporta casi toda la falla del circuito, $1-0,98803=0,01197$."}
+  ],
+  sim:{
+    controles:[
+      {id:"a",label:"P(falla) de D\u2081 y D\u2082 \u00d710000",min:1,max:5000,step:1,val:100},
+      {id:"b",label:"P(falla) de D\u2083, D\u2084 y D\u2085 \u00d71000",min:1,max:900,step:1,val:100}
+    ],
+    draw:function(ctx,W,H,pp){
+      const pa=pp.a/10000, pb=pp.b/1000;
+      const pSup=1-Math.pow(1-pa,2);
+      const qI=1-pSup*pb;
+      const qII=1-pb*pb;
+      const total=qI*qII;
+      T(ctx,'Mover los controles reproduce el c\u00e1lculo: valores del enunciado 0,01 y 0,1',W/2,30,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'rama superior funciona',val:(1-pSup).toFixed(5),frac:1-pSup,col:'--accent'},
+        {lab:'Bloque I funciona',val:qI.toFixed(5),frac:qI,col:'--accent2'},
+        {lab:'Bloque II funciona',val:qII.toFixed(5),frac:qII,col:'--accent2'},
+        {lab:'circuito completo',val:total.toFixed(5),frac:total,col:'--warn'}
+      ],80);
+      return {"q_I":qI.toFixed(5),"q_II":qII.toFixed(5),"circuito funciona":total.toFixed(7)};
+    }
+  }
+},
+{
+  id:"ej8", g:"Ejercicios", titulo:"8. Gemelas",
+  tema:"Bayes · particiones",
+  enunciado:"$P(\\text{ambos varones})=\\alpha$, $P(\\text{ambas mujeres})=\\beta$; si son de distinto sexo, $P(\\text{primera niña})=1/2$. Si la primera en nacer es niña, ¿cuál es la probabilidad de que la segunda también?",
+  resultado:"$\\dfrac{2\\beta}{1-\\alpha+\\beta}$.",
+  pasos:[
+    {t:"Particiones",h:"Ambos varones ($\\alpha$), ambas mujeres ($\\beta$), distinto sexo ($1-\\alpha-\\beta$)."},
+    {t:"Primera niña",h:"$P(G_1)=\\beta+\\tfrac12(1-\\alpha-\\beta)$."},
+    {t:"Ambas niñas",h:"Si la segunda también es niña, el par es 'ambas mujeres': $P(G_1\\cap G_2)=\\beta$."},
+    {t:"Cociente",h:"$P(G_2\\mid G_1)=\\dfrac{2\\beta}{1-\\alpha+\\beta}$."}
+  ],
+  sim:{
+    controles:[
+      {id:"a",label:"α (ambos varones) ×100",min:0,max:90,step:1,val:30},
+      {id:"b",label:"β (ambas mujeres) ×100",min:0,max:90,step:1,val:20}
+    ],
+    draw:function(ctx,W,H,pp){
+      let a=pp.a/100,b=pp.b/100; if(a+b>1){const s=a+b; a/=s; b/=s;}
+      const res=2*b/(1-a+b);
+      T(ctx,'Si α+β>1 se normaliza. La respuesta depende de α y β',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(primera niña)',val:(b+0.5*(1-a-b)).toFixed(4),frac:b+0.5*(1-a-b),col:'--accent'},
+        {lab:'P(segunda niña | primera niña)',val:res.toFixed(4),frac:res,col:'--warn'}
+      ],90);
+      return {"α":a.toFixed(2),"β":b.toFixed(2),"P(2ª niña | 1ª niña)":res.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej9", g:"Ejercicios", titulo:"9. Moneda, dado y cinco monedas",
+  tema:"Bayes",
+  enunciado:"Sale ceca $\\to$ se tira un dado y se anota el número. Sale cara $\\to$ se lanzan $5$ monedas más y se anota el n.º de caras (incluida la primera). Si el número anotado es $2$, ¿probabilidad de haber tirado el dado?",
+  resultado:"$\\dfrac{16}{31}\\approx 0,5161$.",
+  pasos:[
+    {t:"Ramas",h:"$P(\\text{dado})=P(\\text{cara})=1/2$."},
+    {t:"Verosimilitudes",h:"$P(2\\mid\\text{dado})=1/6$; con cara, total $=1+\\mathrm{Bin}(5,\\tfrac12)$, $P(2\\mid\\text{cara})=\\binom{5}{1}/2^5=5/32$."},
+    {t:"Bayes",h:"$P(\\text{dado}\\mid 2)=\\dfrac{\\tfrac12\\tfrac16}{\\tfrac12\\tfrac16+\\tfrac12\\tfrac{5}{32}}=\\tfrac{16}{31}$."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[{label:"Simular 100.000 veces",fn:function(st,paint){
+      const rng=LCG(2024); let n=0,d=0,N=100000;
+      for(let i=0;i<N;i++){
+        let rec,dado;
+        if(rng()<0.5){rec=1+Math.floor(rng()*6);dado=true;}
+        else{let c=1;for(let k=0;k<5;k++)if(rng()<0.5)c++;rec=c;dado=false;}
+        if(rec===2){d++;if(dado)n++;}
+      }
+      st.emp=n/d; paint();
+    }}],
+    draw:function(ctx,W,H,pp,st){
+      T(ctx,'Posterior de "fue el dado", dado que se anotó 2',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'teórico 16/31',val:(16/31).toFixed(4),frac:16/31,col:'--accent'},
+        {lab:'simulado',val:(st.emp!==undefined?st.emp.toFixed(4):'—'),frac:st.emp||0,col:'--accent2'}
+      ],110);
+      return {"P(dado | 2)":(16/31).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej10", g:"Ejercicios", titulo:"10. Bit a través de relevadores",
+  tema:"independencia · recursión",
+  enunciado:"Cada relevador invierte el bit con probabilidad $0,2$, independientes. (a) Se envía $1$: $P(\\text{recibir }1)$ con $3$ relevadores. (b) Mensaje $(0,1,0,1)$: $P(\\text{no llegue correcto})$.",
+  resultado:"(a) $0,608$. \\quad (b) $1-0,608^4\\approx 0,8633$.",
+  pasos:[
+    {t:"Recursión",h:"$q_n=(1-f)q_{n-1}+f(1-q_{n-1})$ con $f=0,2$; $q_0=1$."},
+    {t:"Tres relevadores",h:"$q_1=0,8$, $q_2=0,68$, $q_3=0,608$."},
+    {t:"Mensaje de 4 bits",h:"Correcto si lo son los cuatro: $q_3^4$; no correcto $=1-q_3^4$."},
+    {t:"Lectura",h:"$60,8\\%$ por bit derrumba la fiabilidad de $4$ bits a menos del $14\\%$."}
+  ],
+  sim:{
+    controles:[
+      {id:"m",label:"Cantidad de relevadores",min:1,max:12,step:1,val:3},
+      {id:"f",label:"P(inversión) ×100",min:0,max:50,step:1,val:20}
+    ],
+    draw:function(ctx,W,H,pp){
+      const f=pp.f/100, m=Math.max(1,Math.round(pp.m)); let q=1; const xs=[];
+      for(let i=1;i<=m;i++){q=(1-f)*q+f*(1-q);xs.push(q);}
+      T(ctx,'Convergencia de P(bit correcto) hacia 1/2',W/2,30,{s:13,a:'center',col:'--muted'});
+      const x0=60,x1=W-40,y0=H-40,y1=60;
+      const px=i=>x0+(x1-x0)*i/m, py=v=>y0-(y0-y1)*v;
+      ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(x0,py(0.5));ctx.lineTo(x1,py(0.5));ctx.stroke();
+      T(ctx,'1/2',x1,py(0.5)-6,{s:11,a:'right',col:'--muted'});
+      ctx.strokeStyle=C('--accent');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px(0),py(1));
+      xs.forEach((v,i)=>ctx.lineTo(px(i+1),py(v)));ctx.stroke();
+      xs.forEach((v,i)=>{ctx.fillStyle=C('--accent2');ctx.beginPath();ctx.arc(px(i+1),py(v),4,0,7);ctx.fill();});
+      const q3=xs[m-1];
+      return {"P(recibir bien 1 bit)":q3.toFixed(4),"P(4 bits mal)":(1-Math.pow(q3,4)).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej11", g:"Ejercicios", titulo:"11. Dos dados de colores",
+  tema:"probabilidad total · Bayes",
+  enunciado:"Dado $A$: $9$ verdes, $3$ blancas. Dado $B$: $3$ verdes, $9$ blancas. Moneda normal: cara $\\to A$, ceca $\\to B$. (a) $P(\\text{verde en la 1.ª tirada})$; (b) $P(\\text{fue } A\\mid\\text{verde})$.",
+  resultado:"(a) $\\dfrac12$. \\quad (b) $\\dfrac34$.",
+  pasos:[
+    {t:"Total",h:"$P(V)=\\tfrac12\\tfrac{9}{12}+\\tfrac12\\tfrac{3}{12}=\\tfrac12$."},
+    {t:"Bayes",h:"$P(A\\mid V)=\\dfrac{\\tfrac12\\tfrac{9}{12}}{\\tfrac12}=\\tfrac34$."},
+    {t:"Lectura",h:"El verde es $3\\times$ más probable con $A$; a priori iguales, la posterior queda $3/4$."}
+  ],
+  sim:{
+    controles:[{id:"g",label:"Caras verdes del dado A (de 12)",min:1,max:11,step:1,val:9}],
+    draw:function(ctx,W,H,pp){
+      const gA=pp.g/12, gB=(12-pp.g)/12; // B es el espejo
+      const PV=0.5*gA+0.5*gB, post=0.5*gA/PV;
+      T(ctx,'A y B son espejo. Mové las caras verdes de A',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(verde en la 1.ª tirada)',val:PV.toFixed(4),frac:PV,col:'--accent'},
+        {lab:'P(fue A | verde)',val:post.toFixed(4),frac:post,col:'--warn'}
+      ],90);
+      return {"P(verde)":PV.toFixed(4),"P(A | verde)":post.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej12", g:"Ejercicios", titulo:"12. Dos tests de tuberculosis",
+  tema:"Bayes · dos etapas",
+  enunciado:"$5\\%$ tienen TBC. Primer test fiable el $98\\%$. Los positivos van a un segundo test: $0,2\\%$ de error en sanos y nunca falla en infectados. (a) $P(\\text{le hacen los dos tests})$; (b) $P(\\text{2.º test positivo})$; (c) si el 2.º dio negativo, $P(\\text{infectada})$.",
+  resultado:"(a) $0,068$. \\quad (b) $0,049038$. \\quad (c) $0$.",
+  pasos:[
+    {t:"(a)",h:"$P(+_1)=0,05\\cdot0,98+0,95\\cdot0,02=0,068$."},
+    {t:"(b)",h:"$P(+_1\\cap+_2)=0,05\\cdot0,98\\cdot1+0,95\\cdot0,02\\cdot0,002=0,049038$."},
+    {t:"(c)",h:"El 2.º test nunca falla en infectados: $P(-_2\\mid T)=0\\Rightarrow P(T\\mid+_1,-_2)=0$."},
+    {t:"Lectura",h:"Un negativo en el 2.º test descarta la enfermedad con certeza."}
+  ],
+  sim:{
+    controles:[{id:"prev",label:"Prevalencia de TBC ×1000",min:1,max:300,step:1,val:50}],
+    draw:function(ctx,W,H,pp){
+      const t=pp.prev/1000, s=1-t;
+      const p1=t*0.98+s*0.02;
+      const p2=t*0.98*1+s*0.02*0.002;
+      T(ctx,'Mové la prevalencia: (c) sigue siendo 0 siempre',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'(a) P(+ en 1.º test)',val:p1.toFixed(4),frac:p1,col:'--accent'},
+        {lab:'(b) P(+ en 2.º test)',val:p2.toFixed(5),frac:p2,col:'--accent2'},
+        {lab:'(c) P(infectada | 2.º −)',val:'0',frac:0,col:'--bad'}
+      ],90);
+      return {"P(+1)":p1.toFixed(4),"P(+1∩+2)":p2.toFixed(5),"P(TBC | 2.º −)":"0"};
+    }
+  }
+},
+{
+  id:"ej13", g:"Ejercicios", titulo:"13. Cuatro exámenes encadenados",
+  tema:"cadena · dependencia",
+  enunciado:"$P(\\text{aprobar el 1.º})=p$; cada siguiente se aprueba con $p$ si aprobó el anterior y $p/2$ si no. ¿$P(\\text{aprobar al menos tres})$?",
+  resultado:"$\\dfrac{p^3(5-3p)}{2}$.",
+  pasos:[
+    {t:"Secuencias",h:"Al menos tres $=$ {PPPP, FPPP, PFPP, PPFP, PPPF}."},
+    {t:"Transiciones",h:"$P(PPPP)=p^4$; cada 'F interna' aporta $\\tfrac{p^3(1-p)}{2}$; $P(PPPF)=p^3(1-p)$."},
+    {t:"Suma",h:"$p^4+3\\tfrac{p^3(1-p)}{2}+p^3(1-p)=\\tfrac{p^3(5-3p)}{2}$."},
+    {t:"Chequeo",h:"$p=1/2\\to0,21875$; $p=0,7\\to0,49735$."}
+  ],
+  sim:{
+    controles:[{id:"p",label:"p ×100",min:1,max:100,step:1,val:70}],
+    draw:function(ctx,W,H,pp){
+      const f=p=>Math.pow(p,3)*(5-3*p)/2;
+      const x0=60,x1=W-40,y0=H-40,y1=50;
+      const px=p=>x0+(x1-x0)*p, py=v=>y0-(y0-y1)*v;
+      ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.stroke();
+      ctx.strokeStyle=C('--accent');ctx.lineWidth=2;ctx.beginPath();
+      for(let i=0;i<=100;i++){const p=i/100,X=px(p),Y=py(f(p));i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}
+      ctx.stroke();
+      const p=pp.p/100;
+      ctx.fillStyle=C('--warn');ctx.beginPath();ctx.arc(px(p),py(f(p)),6,0,7);ctx.fill();
+      T(ctx,'P(aprobar ≥3) en función de p',W/2,30,{s:13,a:'center',col:'--muted'});
+      T(ctx,'p',x1,y0+18,{s:12,col:'--muted'});
+      return {"p":p.toFixed(2),"P(≥3)":f(p).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej14", g:"Ejercicios", titulo:"14. Tres urnas encadenadas",
+  tema:"probabilidad total · Bayes",
+  enunciado:"Urnas I $(1$B$,2$N$)$, II $(2$B$,1$N$)$, III $(2$B$,2$N$)$. Se pasa una de I a II, luego una de II a III y se extrae una de III. (a) $P(\\text{última blanca})$; (b) $P(\\text{primera transferida blanca}\\mid\\text{última blanca})$.",
+  resultado:"(a) $\\dfrac{31}{60}\\approx0,5167$. \\quad (b) $\\dfrac{11}{31}\\approx0,3548$.",
+  pasos:[
+    {t:"A III llega blanca",h:"$P(B_2)=\\tfrac13\\tfrac34+\\tfrac23\\tfrac12=\\tfrac{7}{12}$."},
+    {t:"(a)",h:"III (2B2N, total 4) recibe 1 y queda con 5: $\\tfrac{7}{12}\\tfrac35+\\tfrac{5}{12}\\tfrac25=\\tfrac{31}{60}$."},
+    {t:"(b) conjunta",h:"$P(B_1\\text{B}\\cap\\text{últ.\\ B})=\\tfrac13(\\tfrac34\\tfrac35+\\tfrac14\\tfrac25)=\\tfrac{11}{60}$."},
+    {t:"(b) Bayes",h:"$\\tfrac{11/60}{31/60}=\\tfrac{11}{31}$."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[{label:"Simular 100.000 cadenas",fn:function(st,paint){
+      const rng=LCG(555); let ultB=0,b1yU=0,N=100000;
+      for(let i=0;i<N;i++){
+        // urna I: 1B,2N
+        const t1=(rng()<1/3)?'B':'N';
+        // urna II: 2B,1N + t1  -> total 4
+        let II=['B','B','N',t1];
+        const t2=II[Math.floor(rng()*4)];
+        // urna III: 2B,2N + t2 -> total 5
+        let III=['B','B','N','N',t2];
+        const t3=III[Math.floor(rng()*5)];
+        if(t3==='B'){ultB++; if(t1==='B')b1yU++;}
+      }
+      st.a=ultB/N; st.b=b1yU/ultB; paint();
+    }}],
+    draw:function(ctx,W,H,pp,st){
+      T(ctx,'Teórico vs. simulado',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'(a) teórico 31/60',val:(31/60).toFixed(4),frac:31/60,col:'--accent'},
+        {lab:'(a) simulado',val:(st.a!==undefined?st.a.toFixed(4):'—'),frac:st.a||0,col:'--accent2'},
+        {lab:'(b) teórico 11/31',val:(11/31).toFixed(4),frac:11/31,col:'--accent'},
+        {lab:'(b) simulado',val:(st.b!==undefined?st.b.toFixed(4):'—'),frac:st.b||0,col:'--accent2'}
+      ],85);
+      return {"(a)":(31/60).toFixed(4),"(b)":(11/31).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej15", g:"Ejercicios", titulo:"15. Daltonismo",
+  tema:"Bayes",
+  enunciado:"$4\\%$ de los varones y $2\\%$ de las mujeres son daltónicos; las mujeres son el $53\\%$. Si se elige un daltónico al azar, ¿probabilidad de que sea varón?",
+  resultado:"$\\dfrac{94}{147}\\approx 0,6395$.",
+  pasos:[
+    {t:"Total",h:"$P(D)=0,47\\cdot0,04+0,53\\cdot0,02=0,0294$."},
+    {t:"Bayes",h:"$P(V\\mid D)=\\dfrac{0,0188}{0,0294}=\\tfrac{94}{147}$."},
+    {t:"Lectura",h:"Aunque hay menos varones, su tasa duplica a la de mujeres: son mayoría entre los daltónicos."}
+  ],
+  sim:{
+    controles:[{id:"pm",label:"% de mujeres en la población",min:1,max:99,step:1,val:53}],
+    draw:function(ctx,W,H,pp){
+      const m=pp.pm/100, v=1-m;
+      const D=v*0.04+m*0.02, post=v*0.04/D;
+      T(ctx,'Mové la proporción de mujeres',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(daltónico)',val:D.toFixed(4),frac:D,col:'--accent'},
+        {lab:'P(varón | daltónico)',val:post.toFixed(4),frac:post,col:'--warn'}
+      ],90);
+      return {"P(D)":D.toFixed(4),"P(varón | D)":post.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej16", g:"Ejercicios", titulo:"16. Diez arandelas",
+  tema:"multinomial",
+  enunciado:"Arandelas: $50\\%$ de $1/4''$, $30\\%$ de $1/8''$, $20\\%$ de $3/8''$. Se eligen $10$. (a) $P(\\text{sólo dos clases})$; (b) $P(\\text{6 de un tipo y 4 de otro})$.",
+  resultado:"(a) $\\approx0,1346$. \\quad (b) $\\approx0,0426$.",
+  pasos:[
+    {t:"Modelo",h:"Cada arandela es tipo $1,2,3$ con $p=(0,5;0,3;0,2)$; $n=10$ (multinomial)."},
+    {t:"(a)",h:"$\\sum_{i<j}\\big[(p_i+p_j)^{10}-p_i^{10}-p_j^{10}\\big]\\approx0,1346$."},
+    {t:"(b)",h:"$\\sum_{i\\ne j}\\binom{10}{6}p_i^6 p_j^4\\approx0,0426$."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[{label:"Simular 200.000 muestras de 10",fn:function(st,paint){
+      const rng=LCG(31416); let c2=0,c64=0,N=200000;
+      for(let i=0;i<N;i++){
+        const cnt=[0,0,0];
+        for(let k=0;k<10;k++){const u=rng();cnt[u<0.5?0:(u<0.8?1:2)]++;}
+        const nz=cnt.filter(x=>x>0);
+        if(nz.length===2)c2++;
+        const s=nz.slice().sort((a,b)=>a-b);
+        if(s.length===2&&s[0]===4&&s[1]===6)c64++;
+      }
+      st.a=c2/N; st.b=c64/N; paint();
+    }}],
+    draw:function(ctx,W,H,pp,st){
+      T(ctx,'Monte Carlo de 10 arandelas',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'(a) teórico',val:'0,1346',frac:0.1346,col:'--accent'},
+        {lab:'(a) simulado',val:(st.a!==undefined?st.a.toFixed(4):'—'),frac:st.a||0,col:'--accent2'},
+        {lab:'(b) teórico',val:'0,0426',frac:0.0426,col:'--accent'},
+        {lab:'(b) simulado',val:(st.b!==undefined?st.b.toFixed(4):'—'),frac:st.b||0,col:'--accent2'}
+      ],85);
+      return {"(a) dos clases":"0,1346","(b) 6 y 4":"0,0426"};
+    }
+  }
+},
+{
+  id:"ej17", g:"Ejercicios", titulo:"17. Seguros por riesgo",
+  tema:"probabilidad total · Bayes",
+  enunciado:"$20\\%$ alto riesgo, $50\\%$ medio, $30\\%$ bajo, con $P(\\text{accidente/año})=0,30;0,15;0,05$. (a) $P(\\text{al menos un accidente en un año})$; (b) sin accidentes en $3$ años, $P(\\text{bajo riesgo})$.",
+  resultado:"(a) $0,15$. \\quad (b) $\\approx0,4064$.",
+  pasos:[
+    {t:"(a)",h:"$0,20\\cdot0,30+0,50\\cdot0,15+0,30\\cdot0,05=0,15$."},
+    {t:"(b) verosimilitud",h:"$P(\\text{sin acc.\\ 3 años}\\mid\\text{clase})=(1-p)^3$ (independencia entre años)."},
+    {t:"(b) Bayes",h:"$\\dfrac{0,30\\cdot0,95^3}{0,20\\cdot0,70^3+0,50\\cdot0,85^3+0,30\\cdot0,95^3}\\approx0,4064$."},
+    {t:"Lectura",h:"Tres años limpios llevan 'bajo riesgo' de $0,30$ a $0,41$: evidencia moderada."}
+  ],
+  sim:{
+    controles:[{id:"y",label:"Años consecutivos sin accidentes",min:0,max:12,step:1,val:3}],
+    draw:function(ctx,W,H,pp){
+      const y=pp.y, w=[0.2,0.5,0.3], q=[0.7,0.85,0.95];
+      const num=w[2]*Math.pow(q[2],y);
+      const den=w[0]*Math.pow(q[0],y)+w[1]*Math.pow(q[1],y)+num;
+      const post=den?num/den:0;
+      T(ctx,'Cuantos más años sin accidentes, más probable "bajo riesgo"',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(bajo riesgo | sin acc.)',val:post.toFixed(4),frac:post,col:'--warn'},
+        {lab:'prior de bajo riesgo',val:'0,3000',frac:0.3,col:'--accent'}
+      ],100);
+      return {"años":y,"P(bajo | sin acc.)":post.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej18", g:"Ejercicios", titulo:"18. Hemofilia",
+  tema:"Bayes · actualización",
+  enunciado:"$P(\\text{madre portadora})=1/2$. Si es portadora, cada hijo tiene $1/2$ de padecer hemofilia. Tuvo tres hijos sanos. (a) $P(\\text{portadora})$; (b) $P(\\text{el 4.º sufra hemofilia})$.",
+  resultado:"(a) $\\dfrac19\\approx0,1111$. \\quad (b) $\\dfrac{1}{18}\\approx0,0556$.",
+  pasos:[
+    {t:"(a) Bayes",h:"$\\dfrac{\\tfrac12(1/2)^3}{\\tfrac12(1/2)^3+\\tfrac12\\cdot1}=\\dfrac{1/16}{9/16}=\\tfrac19$."},
+    {t:"(b)",h:"Sólo hay riesgo si es portadora: $\\tfrac19\\cdot\\tfrac12=\\tfrac{1}{18}$."},
+    {t:"Lectura",h:"Tres hijos sanos bajan la posterior de $1/2$ a $1/9$."}
+  ],
+  sim:{
+    controles:[{id:"k",label:"Hijos sanos observados",min:0,max:10,step:1,val:3}],
+    draw:function(ctx,W,H,pp){
+      const k=pp.k, L=Math.pow(0.5,k);
+      const post=0.5*L/(0.5*L+0.5*1);
+      const riesgo=post*0.5;
+      T(ctx,'Cada hijo sano baja la probabilidad de ser portadora',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(portadora | k sanos)',val:post.toFixed(4),frac:post,col:'--warn'},
+        {lab:'P(próximo hijo con hemofilia)',val:riesgo.toFixed(4),frac:riesgo,col:'--accent2'}
+      ],90);
+      return {"k":k,"P(portadora)":post.toFixed(4),"P(próximo hemofílico)":riesgo.toFixed(4)};
+    }
+  }
+},
+{
+  id:"ej19", g:"Ejercicios", titulo:"19. Equipaje perdido",
+  tema:"Bayes · complemento",
+  enunciado:"Tres transbordos con probabilidad de no realizarse a tiempo $4/10$, $2/10$, $1/10$. El equipaje no llegó: ¿probabilidad de que fallara la primera aerolínea?",
+  resultado:"$\\dfrac{0,4}{0,568}=\\dfrac{50}{71}\\approx 0,7042$.",
+  pasos:[
+    {t:"Perdido",h:"Llega sólo si los tres a tiempo: $P(\\text{perdido})=1-0,6\\cdot0,8\\cdot0,9=0,568$."},
+    {t:"Implicación",h:"$A_1$ implica 'perdido', así $P(A_1\\cap\\text{perdido})=P(A_1)=0,4$."},
+    {t:"Cociente",h:"$P(A_1\\mid\\text{perdido})=0,4/0,568=50/71$."},
+    {t:"Nota",h:"Se asume fallas independientes y 'perdido' $=$ al menos una falla."}
+  ],
+  sim:{
+    controles:[
+      {id:"p1",label:"P(falla 1) ×100",min:1,max:99,step:1,val:40},
+      {id:"p2",label:"P(falla 2) ×100",min:1,max:99,step:1,val:20},
+      {id:"p3",label:"P(falla 3) ×100",min:1,max:99,step:1,val:10}
+    ],
+    draw:function(ctx,W,H,pp){
+      const a=pp.p1/100,b=pp.p2/100,c=pp.p3/100;
+      const perd=1-(1-a)*(1-b)*(1-c);
+      const post=a/perd;
+      T(ctx,'La aerolínea más floja es la más sospechosa',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(equipaje perdido)',val:perd.toFixed(4),frac:perd,col:'--accent'},
+        {lab:'P(falló la 1.ª | perdido)',val:post.toFixed(4),frac:post,col:'--warn'}
+      ],90);
+      return {"P(perdido)":perd.toFixed(4),"P(1.ª | perdido)":post.toFixed(4)};
+    }
+  }
+},
+/* ── Adicionales ── */
+{
+  id:"a1", g:"Adicionales", titulo:"A1. Factura intrusa",
+  tema:"probabilidad total",
+  enunciado:"Dos lotes de $20$ facturas: el primero con $2$ erróneas, el segundo con $3$. Una del primero se mezcla en el segundo. Al revisar una del segundo (ahora $21$), ¿probabilidad de hallar un error?",
+  resultado:"$\\dfrac{31}{210}\\approx 0,1476$.",
+  pasos:[
+    {t:"Segundo grupo",h:"$21$ facturas: $20$ propias ($3$ con error) $+$ la intrusa (error con $2/20$)."},
+    {t:"Total",h:"$\\tfrac{20}{21}\\tfrac{3}{20}+\\tfrac{1}{21}\\tfrac{2}{20}=\\tfrac{31}{210}$."}
+  ],
+  sim:{controles:[],draw:function(ctx,W,H){
+    T(ctx,'Aporte de las propias vs. la intrusa',W/2,34,{s:13,a:'center',col:'--muted'});
+    barras(ctx,W,[
+      {lab:'propias (20/21·3/20)',val:(30/210).toFixed(4),frac:30/210,col:'--accent'},
+      {lab:'intrusa (1/21·2/20)',val:(1/210).toFixed(4),frac:1/210,col:'--accent2'},
+      {lab:'total',val:(31/210).toFixed(4),frac:31/210,col:'--warn'}
+    ],85);
+    return {"P(error)":(31/210).toFixed(4)};
+  }}
+},
+{
+  id:"a2", g:"Adicionales", titulo:"A2. Lotes de componentes",
+  tema:"Bayes · hipergeométrica",
+  enunciado:"Lotes de $10$: $50\\%$ con $0$ defectuosos, $30\\%$ con $1$, $20\\%$ con $2$. Se prueban $2$. (a) $P(D=2\\mid\\text{ninguno defectuoso})$; (b) $P(D=2\\mid\\text{uno defectuoso})$.",
+  resultado:"(a) $\\dfrac{56}{389}\\approx0,1440$. \\quad (b) $\\dfrac{32}{59}\\approx0,5424$.",
+  pasos:[
+    {t:"Verosimilitudes",h:"$P(\\text{ambos buenos}\\mid D)=\\binom{10-D}{2}/\\binom{10}{2}$; $P(\\text{uno malo}\\mid D)=\\binom{D}{1}\\binom{10-D}{1}/\\binom{10}{2}$."},
+    {t:"(a)",h:"$\\dfrac{0,2\\cdot28/45}{0,5+0,3\\cdot4/5+0,2\\cdot28/45}=\\tfrac{56}{389}$."},
+    {t:"(b)",h:"$\\dfrac{0,2\\cdot16/45}{0,3\\cdot2/10+0,2\\cdot16/45}=\\tfrac{32}{59}$."}
+  ],
+  sim:{controles:[],draw:function(ctx,W,H){
+    T(ctx,'Posterior de "2 defectuosos" según lo observado',W/2,34,{s:13,a:'center',col:'--muted'});
+    barras(ctx,W,[
+      {lab:'P(D=2 | ninguno malo)',val:(56/389).toFixed(4),frac:56/389,col:'--accent'},
+      {lab:'P(D=2 | uno malo)',val:(32/59).toFixed(4),frac:32/59,col:'--warn'}
+    ],95);
+    return {"(a)":(56/389).toFixed(4),"(b)":(32/59).toFixed(4)};
+  }}
+},
+{
+  id:"a3", g:"Adicionales", titulo:"A3. Dos bolsos de frascos",
+  tema:"independencia · sin reposición",
+  enunciado:"Bolso I: $3$ aspirinas, $2$ tiroides. Bolso II: $2$ aspirinas, $3$ tiroides, $1$ laxante. (a) uno de cada bolso, $P(\\text{ninguno de tiroides})$; (b) uno de cada bolso y luego uno al azar de esos dos, $P(\\text{aspirina})$; (c) moneda con $P(\\text{cara})=2P(\\text{ceca})$: cara $\\to$ dos de I, ceca $\\to$ dos de II, $P(\\text{ambos aspirina})$.",
+  resultado:"(a) $\\dfrac{3}{10}$. \\quad (b) $\\dfrac{7}{15}$. \\quad (c) $\\dfrac29$.",
+  pasos:[
+    {t:"(a)",h:"$\\tfrac35\\cdot\\tfrac36=\\tfrac{3}{10}$."},
+    {t:"(b)",h:"$\\tfrac12\\tfrac35+\\tfrac12\\tfrac26=\\tfrac{7}{15}$."},
+    {t:"(c)",h:"$P(\\text{cara})=2/3$: $\\tfrac23\\tfrac{\\binom32}{\\binom52}+\\tfrac13\\tfrac{\\binom22}{\\binom62}=\\tfrac29$."}
+  ],
+  sim:{controles:[],draw:function(ctx,W,H){
+    barras(ctx,W,[
+      {lab:'(a) ninguno tiroides',val:(3/10).toFixed(4),frac:3/10,col:'--accent'},
+      {lab:'(b) aspirina',val:(7/15).toFixed(4),frac:7/15,col:'--accent2'},
+      {lab:'(c) ambos aspirina',val:(2/9).toFixed(4),frac:2/9,col:'--warn'}
+    ],80);
+    return {"(a)":(3/10).toFixed(4),"(b)":(7/15).toFixed(4),"(c)":(2/9).toFixed(4)};
+  }}
+},
+{
+  id:"a4", g:"Adicionales", titulo:"A4. Dos ratas y tres puertas",
+  tema:"geométrica · Bayes",
+  enunciado:"Tres puertas: $1$ gato (muerte), $2$ túnel (vuelve), $3$ libertad. Rata lista (no repite puertas) y rata tonta (al azar). (a) $P(\\text{la tonta alcance la libertad})$; (b) si tardó $2$ elecciones, $P(\\text{sea la lista})$.",
+  resultado:"(a) $\\dfrac12$. \\quad (b) $\\dfrac35=0,6$.",
+  pasos:[
+    {t:"(a)",h:"La puerta 2 reintenta; condicionando a terminar (1 o 3, simétricas): $1/2$."},
+    {t:"(b) lista",h:"En 2 elecciones: puerta 2 y luego 3 (sin repetir) $=\\tfrac13\\tfrac12=\\tfrac16$."},
+    {t:"(b) tonta",h:"$\\tfrac13\\tfrac13=\\tfrac19$."},
+    {t:"(b) Bayes",h:"$\\dfrac{1/6}{1/6+1/9}=\\tfrac35$."}
+  ],
+  sim:{controles:[],acciones:[{label:"Simular 100.000 ratas tontas",fn:function(st,paint){
+    const rng=LCG(9001); let libre=0,N=100000;
+    for(let i=0;i<N;i++){ for(let paso=0;paso<1000;paso++){const d=Math.floor(rng()*3);
+      if(d===0)break; if(d===2){libre++;break;} } }
+    st.a=libre/N; paint();
+  }}],draw:function(ctx,W,H,pp,st){
+    T(ctx,'(a) por simulación; (b) por Bayes',W/2,34,{s:13,a:'center',col:'--muted'});
+    barras(ctx,W,[
+      {lab:'(a) teórico 1/2',val:(0.5).toFixed(4),frac:0.5,col:'--accent'},
+      {lab:'(a) simulado',val:(st.a!==undefined?st.a.toFixed(4):'—'),frac:st.a||0,col:'--accent2'},
+      {lab:'(b) P(lista | 2 elecciones)',val:(3/5).toFixed(4),frac:3/5,col:'--warn'}
+    ],85);
+    return {"(a)":"0,5000","(b)":(3/5).toFixed(4)};
+  }}
+},
+{
+  id:"a5", g:"Adicionales", titulo:"A5. Basquetbolistas alternados",
+  tema:"geométrica · serie",
+  enunciado:"$A$ y $B$ tiran alternadamente hasta encestar. <b>Nota:</b> el enunciado no da la probabilidad de encestar; se resuelve en función de $p$. (a) si $A$ empieza; (b) si una moneda decide quién empieza.",
+  resultado:"(a) $P(A)=\\dfrac{1}{2-p},\\ P(B)=\\dfrac{1-p}{2-p}$. \\quad (b) $\\dfrac12$ y $\\dfrac12$.",
+  pasos:[
+    {t:"(a)",h:"$P(A)=p+(1-p)^2P(A)\\Rightarrow P(A)=\\dfrac{1}{2-p}$."},
+    {t:"(b)",h:"Por simetría, sortear el inicio deja $1/2$ a cada uno."},
+    {t:"Lectura",h:"Empezar da ventaja ($\\tfrac{1}{2-p}>\\tfrac12$); el sorteo la neutraliza."}
+  ],
+  sim:{controles:[{id:"p",label:"P(encestar) ×100",min:5,max:100,step:1,val:50}],
+    draw:function(ctx,W,H,pp){
+      const p=pp.p/100, PA=1/(2-p), PB=(1-p)/(2-p);
+      T(ctx,'Ventaja de empezar en función de p',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(A gana | A empieza)',val:PA.toFixed(4),frac:PA,col:'--warn'},
+        {lab:'P(B gana | A empieza)',val:PB.toFixed(4),frac:PB,col:'--accent'},
+        {lab:'con sorteo, cada uno',val:(0.5).toFixed(4),frac:0.5,col:'--accent2'}
+      ],85);
+      return {"p":p.toFixed(2),"P(A | A empieza)":PA.toFixed(4)};
+    }}
+},
+{
+  id:"a6", g:"Adicionales", titulo:"A6. Dado que fija cuántas se extraen",
+  tema:"probabilidad total · Bayes",
+  enunciado:"Urna: $4$ blancas, $11$ negras. Se tira un dado y ese número es la cantidad de esferas que se extraen sin reposición. (a) $P(\\text{todas blancas})$; (b) $P(\\text{el dado fue }3\\mid\\text{todas blancas})$.",
+  resultado:"(a) $\\dfrac{1}{18}\\approx0,0556$. \\quad (b) $\\dfrac{12}{455}\\approx0,0264$.",
+  pasos:[
+    {t:"Verosimilitud",h:"$P(\\text{todas blancas}\\mid k)=\\binom{4}{k}/\\binom{15}{k}$, nula si $k>4$."},
+    {t:"(a)",h:"$\\tfrac16\\big(\\tfrac{4}{15}+\\tfrac{6}{105}+\\tfrac{4}{455}+\\tfrac{1}{1365}\\big)=\\tfrac16\\tfrac13=\\tfrac{1}{18}$."},
+    {t:"(b) Bayes",h:"$\\dfrac{\\tfrac16\\binom43/\\binom{15}{3}}{1/18}=\\tfrac{12}{455}$."}
+  ],
+  sim:{controles:[{id:"k",label:"Resultado del dado k",min:1,max:6,step:1,val:3}],
+    draw:function(ctx,W,H,pp){
+      function comb(n,r){if(r<0||r>n)return 0;let c=1;for(let i=0;i<r;i++)c=c*(n-i)/(i+1);return c;}
+      const k=pp.k, Lk=comb(4,k)/comb(15,k);
+      T(ctx,'P(todas blancas | k). Cae a 0 apenas k>4',W/2,34,{s:13,a:'center',col:'--muted'});
+      barras(ctx,W,[
+        {lab:'P(todas blancas | k)',val:Lk.toFixed(4),frac:Lk,col:'--accent'},
+        {lab:'P(todas blancas) total',val:(1/18).toFixed(4),frac:1/18,col:'--accent2'}
+      ],95);
+      return {"k":k,"P(todas blancas | k)":Lk.toFixed(4)};
+    }}
+},
+{
+  id:"a7", g:"Adicionales", titulo:"A7. Problema de los puntos (Pascal)",
+  tema:"reparto justo",
+  enunciado:"Se juega a $5$ puntos, jugadores parejos, sin empates. Se interrumpe con Marcelo $4$ a $3$. ¿Cómo repartir el pozo?",
+  resultado:"Marcelo $\\dfrac34$, Esteban $\\dfrac14$.",
+  pasos:[
+    {t:"Idea de Pascal",h:"Repartir según la probabilidad de ganar de continuar, no según los puntos ya hechos."},
+    {t:"Faltantes",h:"Marcelo necesita $1$; Esteban, $2$."},
+    {t:"Cálculo",h:"$P(\\text{Marcelo})=\\tfrac12+\\tfrac12\\tfrac12=\\tfrac34$; Esteban $\\tfrac14$."}
+  ],
+  sim:{controles:[],draw:function(ctx,W,H){
+    T(ctx,'Reparto proporcional a la probabilidad de ganar',W/2,34,{s:13,a:'center',col:'--muted'});
+    barras(ctx,W,[
+      {lab:'Marcelo (le falta 1)',val:(3/4).toFixed(4),frac:3/4,col:'--warn'},
+      {lab:'Esteban (le faltan 2)',val:(1/4).toFixed(4),frac:1/4,col:'--accent'}
+    ],100);
+    return {"Marcelo":"0,75","Esteban":"0,25"};
+  }}
+}
+];
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Generado a partir del archivo LaTeX de la guía.</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

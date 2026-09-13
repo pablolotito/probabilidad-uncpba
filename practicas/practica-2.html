@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 2 — Cálculos combinatorios. Resultados igualmente probables.</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DATOS — Práctica 2: Cálculos combinatorios. Resultados igualmente probables.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* --- utilidades combinatorias --- */
+function fact(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function Cnk(n,k){if(k<0||k>n)return 0;k=Math.min(k,n-k);let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return Math.round(r);}
+function Pnk(n,k){let r=1;for(let i=0;i<k;i++)r*=(n-i);return r;}
+function pct(x){return (100*x).toFixed(2).replace('.',',')+' %';}
+function num(x,d){return x.toFixed(d===undefined?4:d).replace('.',',');}
+
+/* dos barras comparadas: teórico (accent) vs simulado (accent2) */
+function dosBarras(ctx,W,y,teo,sim,labT,labS){
+  bar(ctx,60,y,W-140,26,teo,'--accent',labT,num(teo));
+  if(sim!==null&&sim!==undefined) bar(ctx,60,y+62,W-140,26,sim,'--accent2',labS,num(sim));
+}
+/* curva P(n) con marcador en el valor actual */
+function curva(ctx,W,H,f,x0,x1,xc,lab){
+  const L=70,R=W-40,T0=44,B=H-44;
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(L,T0);ctx.lineTo(L,B);ctx.lineTo(R,B);ctx.stroke();
+  T(ctx,'1',L-8,T0+5,{s:12,a:'right',col:'--muted'});
+  T(ctx,'0',L-8,B+4,{s:12,a:'right',col:'--muted'});
+  T(ctx,lab||'',L,T0-14,{s:12.5,col:'--muted'});
+  ctx.strokeStyle=C('--accent');ctx.lineWidth=2.4;ctx.beginPath();
+  for(let i=0;i<=260;i++){
+    const x=x0+(x1-x0)*i/260, px=L+(R-L)*i/260, py=B-(B-T0)*Math.min(1,Math.max(0,f(x)));
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+  }
+  ctx.stroke();
+  ctx.strokeStyle=alpha(C('--muted'),.5);ctx.lineWidth=1;ctx.setLineDash([5,5]);
+  const py5=B-(B-T0)*0.5;ctx.beginPath();ctx.moveTo(L,py5);ctx.lineTo(R,py5);ctx.stroke();ctx.setLineDash([]);
+  T(ctx,'0,5',R+2,py5+4,{s:11,a:'left',col:'--muted'});
+  const px=L+(R-L)*(xc-x0)/(x1-x0), py=B-(B-T0)*Math.min(1,Math.max(0,f(xc)));
+  ctx.fillStyle=C('--warn');ctx.beginPath();ctx.arc(px,py,7,0,7);ctx.fill();
+  T(ctx,num(f(xc)),px,py-14,{s:14,b:1,a:'center',col:'--warn'});
+}
+/* dados dibujados */
+function dado(ctx,x,y,s,v,col){
+  ctx.fillStyle=col?alpha(C(col),.25):C('--panel');RR(ctx,x,y,s,s,s*0.18);ctx.fill();
+  ctx.strokeStyle=col?C(col):C('--line');ctx.lineWidth=1.6;ctx.stroke();
+  const p=[[0,0],[-1,-1],[1,1],[-1,1],[1,-1],[-1,0],[1,0]];
+  const cfg={1:[0],2:[1,2],3:[1,0,2],4:[1,2,3,4],5:[1,2,3,4,0],6:[1,2,3,4,5,6]};
+  ctx.fillStyle=C('--ink');
+  (cfg[v]||[]).forEach(k=>{const d=p[k];
+    ctx.beginPath();ctx.arc(x+s/2+d[0]*s*0.245,y+s/2+d[1]*s*0.245,s*0.075,0,7);ctx.fill();});
+}
+function histo(ctx,W,H,vals,labs,col,titulo){
+  const L=60,R=W-30,T0=52,B=H-46,n=vals.length;
+  const mx=Math.max.apply(null,vals.concat([1e-9]));
+  const bw=(R-L)/n;
+  T(ctx,titulo||'',L,30,{s:13,col:'--muted'});
+  vals.forEach((v,k)=>{
+    const h=(B-T0)*v/mx, x=L+k*bw+bw*0.14, w=bw*0.72;
+    ctx.fillStyle=alpha(C(typeof col==='function'?col(k):col),.85);
+    RR(ctx,x,B-h,w,h,5);ctx.fill();
+    T(ctx,labs[k],x+w/2,B+18,{s:12.5,a:'center',col:'--muted'});
+    T(ctx,num(v,4),x+w/2,B-h-8,{s:12.5,b:1,a:'center'});
+  });
+  ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(L,B);ctx.lineTo(R,B);ctx.stroke();
+}
+
+
+/* todos los controles de esta guía son enteros; jsdom y algunos navegadores
+   pueden entregar valores fraccionarios, que romperían los índices de array */
+function ri(p){const q={};for(const k in p)q[k]=Math.round(p[k]);return q;}
+
+const EJERCICIOS = [
+/* ════════════════ 1 ════════════════ */
+{
+  id:"ej1", g:"Ejercicios", titulo:"1. Temperatura, presión y catalizador",
+  tema:"principio de multiplicación · muestreo sin reposición",
+  enunciado:"Se estudian $3$ temperaturas, $4$ presiones y $5$ catalizadores; cada experimento usa una de cada. <ul>"+
+    "<li>(a) ¿Cuántos experimentos distintos son posibles?</li>"+
+    "<li>(b) ¿Cuántos usan la temperatura más baja y las dos presiones más bajas?</li>"+
+    "<li>(c) Se realizan $5$ experimentos al azar el primer día. ¿Probabilidad de usar un catalizador distinto en cada uno?</li></ul>",
+  resultado:"(a) $60$. \u00a0 (b) $10$. \u00a0 (c) $\\dfrac{12^5}{\\binom{60}{5}}=\\dfrac{248\\,832}{5\\,461\\,512}\\approx 0{,}04556$.",
+  pasos:[
+    {t:"Principio de multiplicación",h:"Cada experimento es una terna $(T,P,C)$ y las tres elecciones son libres entre sí: $3\\cdot4\\cdot5=60$."},
+    {t:"Restringir sin recontar",h:"Fijar la temperatura más baja deja $1$ opción, y las dos presiones más bajas dejan $2$: $1\\cdot2\\cdot5=10$."},
+    {t:"El espacio de (c)",h:"Se eligen $5$ de los $60$ experimentos sin reposición y sin orden: $\\binom{60}{5}=5\\,461\\,512$ subconjuntos equiprobables."},
+    {t:"Contar el evento",h:"Cada catalizador aparece en $3\\cdot4=12$ experimentos. Cinco catalizadores distintos entre cinco experimentos obliga a tomar uno de cada bloque: $12^5$ formas."},
+    {t:"Laplace",h:"$P=12^5/\\binom{60}{5}\\approx 0{,}0456$: menos de una vez cada veinte."}
+  ],
+  sim:{
+    controles:[{id:"c",label:"Catalizadores disponibles",min:5,max:12,step:1,val:5},
+               {id:"k",label:"Experimentos el primer día",min:2,max:8,step:1,val:5}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const tot=3*4*p.c, k=p.k;
+      /* P(k experimentos, todos con catalizador distinto) */
+      let fav=Cnk(p.c,k)*Math.pow(12,k);
+      const P=k>p.c?0:fav/Cnk(tot,k);
+      T(ctx,'Experimentos posibles: 3 × 4 × '+p.c+' = '+tot,60,34,{s:14,col:'--muted'});
+      dosBarras(ctx,W,110,P,null,'P(los '+k+' con catalizador distinto)');
+      T(ctx,'favorables = C('+p.c+','+k+')·12^'+k,60,240,{s:13.5,col:'--muted'});
+      T(ctx,'totales = C('+tot+','+k+')',60,266,{s:13.5,col:'--muted'});
+      T(ctx,'Con más catalizadores el evento es MÁS fácil; con más experimentos, más difícil.',
+        60,318,{s:13,col:'--warn'});
+      return {"P":num(P,5),"Experimentos":tot,"Elegidos":k};
+    }
+  }
+},
+/* ════════════════ 2 ════════════════ */
+{
+  id:"ej2", g:"Ejercicios", titulo:"2. Los tres envases equivocados",
+  tema:"posición del último éxito · hipergeométrica",
+  enunciado:"Al envasar $6$ productos distintos el operario se equivocó en $3$. El supervisor revisa los envases en orden aleatorio. ¿Probabilidad de que (a) los $3$ primeros revisados sean los equivocados? (b) necesite revisar $i$ envases para encontrar los $3$ ($i=4,5,6$)?",
+  resultado:"(a) $1/20=0{,}05$. \u00a0 (b) $P(i)=\\dbinom{i-1}{2}\\big/\\dbinom{6}{3}$: \u00a0 $P(4)=3/20$, $P(5)=3/10$, $P(6)=1/2$.",
+  pasos:[
+    {t:"Qué es un resultado",h:"Sólo importa en qué posiciones de revisión caen los $3$ defectuosos: $S$ tiene $\\binom{6}{3}=20$ elementos equiprobables."},
+    {t:"Inciso (a)",h:"Una única configuración favorable, $\\{1,2,3\\}$: $P=1/20$."},
+    {t:"Traducir «necesitar $i$»",h:"Equivale a que el último defectuoso esté en la posición $i$, es decir $\\max D=i$."},
+    {t:"Contar",h:"La posición $i$ es defectuosa y las otras dos están entre las $i-1$ primeras: $\\binom{i-1}{2}$ casos."},
+    {t:"Control",h:"$1+3+6+10=20$: las cuatro posibilidades ($i=3,4,5,6$) agotan el espacio."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Envases (n)",min:4,max:12,step:1,val:6},
+               {id:"d",label:"Defectuosos (d)",min:2,max:5,step:1,val:3}],
+    acciones:[{label:"Simular 20 000 revisiones",fn:function(st,rp){
+      st.h=null;rp();}}],
+    draw:function(ctx,W,H,p,st){p=ri(p);
+      const n=p.n, d=Math.min(p.d,p.n-1), tot=Cnk(n,d);
+      const teo=[],labs=[];
+      for(let i=d;i<=n;i++){teo.push(Cnk(i-1,d-1)/tot);labs.push('i='+i);}
+      /* Monte Carlo */
+      if(st.h===null||st.h===undefined||st.n!==n||st.d!==d){
+        const R=LCG(20260812), N=20000, cnt=new Array(n-d+1).fill(0);
+        for(let r=0;r<N;r++){
+          const a=[];for(let j=0;j<n;j++)a.push(j<d);
+          for(let j=n-1;j>0;j--){const q=Math.floor(R()*(j+1));const t=a[j];a[j]=a[q];a[q]=t;}
+          let last=0;for(let j=0;j<n;j++)if(a[j])last=j+1;
+          cnt[last-d]++;
+        }
+        st.h=cnt.map(x=>x/N);st.n=n;st.d=d;
+      }
+      const L=60,R2=W-30,T0=58,B=H-52,m=teo.length,bw=(R2-L)/m;
+      const mx=Math.max.apply(null,teo);
+      T(ctx,'Distribución de i = posición del último defectuoso   ('+d+' de '+n+')',L,32,{s:13,col:'--muted'});
+      teo.forEach((v,k)=>{
+        const x=L+k*bw, w=bw*0.36;
+        let h=(B-T0)*v/mx;
+        ctx.fillStyle=alpha(C('--accent'),.85);RR(ctx,x+bw*0.08,B-h,w,h,4);ctx.fill();
+        const s=st.h[k]||0, h2=(B-T0)*s/mx;
+        ctx.fillStyle=alpha(C('--accent2'),.85);RR(ctx,x+bw*0.5,B-h2,w,h2,4);ctx.fill();
+        T(ctx,labs[k],x+bw*0.45,B+18,{s:12.5,a:'center',col:'--muted'});
+        T(ctx,num(v,3),x+bw*0.26,B-h-8,{s:11.5,a:'center',b:1});
+      });
+      ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(L,B);ctx.lineTo(R2,B);ctx.stroke();
+      T(ctx,'■ exacto',L,H-12,{s:12,col:'--accent'});
+      T(ctx,'■ simulado (20 000)',L+90,H-12,{s:12,col:'--accent2'});
+      return {"P(i = n)":num(teo[teo.length-1],4),"|S|":tot,"Moda":"i = "+n};
+    }
+  }
+},
+/* ════════════════ 3 ════════════════ */
+{
+  id:"ej3", g:"Ejercicios", titulo:"3. Mínimo y máximo de tres insignias",
+  tema:"estadísticos de orden · combinaciones",
+  enunciado:"Diez personas llevan insignias $1$ a $10$; se eligen $3$ al azar. (a) ¿Probabilidad de que el número menor sea $5$? (b) ¿Y de que el mayor sea $5$?",
+  resultado:"(a) $\\binom{5}{2}/\\binom{10}{3}=1/12\\approx0{,}0833$. \u00a0 (b) $\\binom{4}{2}/\\binom{10}{3}=1/20=0{,}05$.",
+  pasos:[
+    {t:"Espacio muestral",h:"Subconjuntos de tamaño $3$ de $\\{1,\\dots,10\\}$: $\\binom{10}{3}=120$, equiprobables."},
+    {t:"Mínimo $=m$",h:"Hay que incluir $m$ y elegir los otros dos por encima: $\\binom{10-m}{2}$ formas."},
+    {t:"Máximo $=m$",h:"Hay que incluir $m$ y elegir los otros dos por debajo: $\\binom{m-1}{2}$ formas."},
+    {t:"Con $m=5$",h:"$\\binom{5}{2}=10$ contra $\\binom{4}{2}=6$: hay más números arriba de $5$ que abajo, y por eso el mínimo es más probable."},
+    {t:"Control",h:"$\\sum_m\\binom{10-m}{2}=\\sum_m\\binom{m-1}{2}=\\binom{10}{3}$: las dos distribuciones suman $1$."}
+  ],
+  sim:{
+    controles:[{id:"m",label:"Valor m",min:1,max:10,step:1,val:5},
+               {id:"N",label:"Personas (N)",min:5,max:20,step:1,val:10}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const N=p.N,m=Math.min(p.m,N),tot=Cnk(N,3);
+      const pmin=Cnk(N-m,2)/tot, pmax=Cnk(m-1,2)/tot;
+      const L=60,B=H-56,T0=110,R2=W-40,bw=(R2-L)/N;
+      T(ctx,'Distribución del mínimo (azul) y del máximo (verde) con N = '+N,L,34,{s:13,col:'--muted'});
+      let mx=0;for(let k=1;k<=N;k++)mx=Math.max(mx,Cnk(N-k,2)/tot,Cnk(k-1,2)/tot);
+      for(let k=1;k<=N;k++){
+        const x=L+(k-1)*bw, v1=Cnk(N-k,2)/tot, v2=Cnk(k-1,2)/tot;
+        const h1=(B-T0)*v1/mx, h2=(B-T0)*v2/mx;
+        ctx.fillStyle=alpha(C('--accent'),k===m?1:.35);RR(ctx,x+bw*0.08,B-h1,bw*0.38,h1,3);ctx.fill();
+        ctx.fillStyle=alpha(C('--accent2'),k===m?1:.35);RR(ctx,x+bw*0.52,B-h2,bw*0.38,h2,3);ctx.fill();
+        T(ctx,k,x+bw*0.48,B+18,{s:11.5,a:'center',col:k===m?'--warn':'--muted',b:k===m});
+      }
+      ctx.strokeStyle=C('--line');ctx.beginPath();ctx.moveTo(L,B);ctx.lineTo(R2,B);ctx.stroke();
+      T(ctx,'P(mín = '+m+') = '+num(pmin)+'    P(máx = '+m+') = '+num(pmax),L,74,{s:15,b:1});
+      return {"P(mín = m)":num(pmin),"P(máx = m)":num(pmax),"|S|":tot};
+    }
+  }
+},
+/* ════════════════ 4 ════════════════ */
+{
+  id:"ej4", g:"Ejercicios", titulo:"4. Dos números consecutivos",
+  tema:"con y sin reposición · orden",
+  enunciado:"Se eligen al azar dos números entre $1,2,\\dots,n$. ¿Cuál es la probabilidad de que sean consecutivos si los escogemos con sustitución? ¿Y sin sustitución?",
+  resultado:"Con sustitución: $\\dfrac{2(n-1)}{n^{2}}$. \u00a0 Sin sustitución: $\\dfrac{2}{n}$. \u00a0 La razón entre ambas es $\\dfrac{n-1}{n}<1$.",
+  pasos:[
+    {t:"Contar los pares consecutivos",h:"Los pares no ordenados $\\{k,k+1\\}$ son exactamente $n-1$, cualquiera sea el modelo."},
+    {t:"Con sustitución",h:"El espacio son los pares ordenados $\\{1,\\dots,n\\}^2$, con $n^2$ elementos; cada par consecutivo aporta $2$ ordenados: $P=2(n-1)/n^2$."},
+    {t:"Sin sustitución",h:"El espacio son los subconjuntos de tamaño $2$: $\\binom{n}{2}$ elementos y $n-1$ favorables, luego $P=2/n$."},
+    {t:"Verificación cruzada",h:"Con pares ordenados distintos: $2(n-1)/[n(n-1)]=2/n$. Coinciden, como debe ser si el orden se usa consistentemente arriba y abajo."},
+    {t:"Por qué la reposición estorba",h:"Los $n$ pares $(a,a)$ nunca son consecutivos y sin embargo ocupan lugar en el denominador."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"n",min:2,max:40,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n, pc=2*(n-1)/(n*n), ps=2/n;
+      curva(ctx,W,H,x=>2*(Math.round(x)-1)/(Math.round(x)*Math.round(x)),2,40,n,'P con sustitución (azul) — el punto sigue a n');
+      const L=70,R=W-40,T0=44,B=H-44;
+      ctx.strokeStyle=C('--accent2');ctx.lineWidth=2.4;ctx.beginPath();
+      for(let i=0;i<=260;i++){const x=2+38*i/260,px=L+(R-L)*i/260,py=B-(B-T0)*Math.min(1,2/x);
+        i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+      ctx.stroke();
+      T(ctx,'verde: sin sustitución = 2/n',R,T0+4,{s:13,a:'right',col:'--accent2'});
+      return {"n":n,"Con sustitución":num(pc),"Sin sustitución":num(ps),"Razón":num(pc/ps)};
+    }
+  }
+},
+/* ════════════════ 5 ════════════════ */
+{
+  id:"ej5", g:"Ejercicios", titulo:"5. Manzanas machucadas",
+  tema:"hipergeométrica · intercambiabilidad",
+  enunciado:"En una canasta hay $30$ manzanas, $5$ machucadas. Se eligen al azar, con orden y sin reemplazo, $6$. (a) Definir $S$, contar y decidir si es equiprobable. (b) ¿Probabilidad de que $3$ estén machucadas? (c) ¿Y de que la $3^{\\mathrm{a}}$ esté machucada?",
+  resultado:"(a) $|S|=30!/24!=427\\,518\\,000$, equiprobable. \u00a0 (b) $\\dfrac{\\binom53\\binom{25}3}{\\binom{30}6}=\\dfrac{920}{23\\,751}\\approx0{,}0387$. \u00a0 (c) $\\dfrac{1}{6}$.",
+  pasos:[
+    {t:"El espacio con orden",h:"$S$ = $6$-uplas de manzanas distintas, $|S|=30\\cdot29\\cdots25=427\\,518\\,000$. Cada una tiene la misma probabilidad."},
+    {t:"Cuándo se puede olvidar el orden",h:"El evento de (b) no depende del orden, y cada subconjunto corresponde a $6!$ tuplas: se puede pasar a $\\binom{30}{6}=593\\,775$."},
+    {t:"Modelo hipergeométrico",h:"Elegir $3$ machucadas de $5$ y $3$ sanas de $25$: $\\binom53\\binom{25}3=23\\,000$ casos."},
+    {t:"El inciso (c) no se cuenta",h:"Por simetría, la manzana que sale tercera es una manzana al azar del total: $P=5/30=1/6$."},
+    {t:"Intercambiabilidad",h:"Sin reemplazo, la $k$-ésima extracción tiene la misma distribución marginal que la primera. Da lo mismo elegir primero o último en un sorteo."}
+  ],
+  sim:{
+    controles:[{id:"k",label:"Machucadas pedidas (k)",min:0,max:5,step:1,val:3},
+               {id:"m",label:"Machucadas en la canasta",min:1,max:12,step:1,val:5},
+               {id:"e",label:"Manzanas extraídas",min:2,max:10,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const N=30,m=p.m,e=p.e,tot=Cnk(N,e);
+      const vals=[],labs=[];
+      const kmax=Math.min(m,e);
+      for(let k=0;k<=kmax;k++){vals.push(Cnk(m,k)*Cnk(N-m,e-k)/tot);labs.push(''+k);}
+      histo(ctx,W,H,vals,labs,k=>k===p.k?'--warn':'--accent',
+        'P(exactamente k machucadas)   ·   canasta de 30, '+m+' machucadas, '+e+' extraídas');
+      const P=p.k<=kmax?vals[p.k]:0;
+      return {"k":p.k,"P(exactamente k)":num(P),"P(la 3.ª machucada)":num(m/N),"|S| sin orden":tot};
+    }
+  }
+},
+/* ════════════════ 6 ════════════════ */
+{
+  id:"ej6", g:"Ejercicios", titulo:"6. Los caramelos del sobrino",
+  tema:"ocupación · problema del coleccionista",
+  enunciado:"Se reparten al azar $10$ caramelos entre $5$ niños (numerados, y un niño puede recibir varios). ¿Probabilidad de que mi sobrino quede sin caramelo?",
+  resultado:"$\\left(\\dfrac{4}{5}\\right)^{10}=\\dfrac{1\\,048\\,576}{9\\,765\\,625}\\approx 0{,}10737$.",
+  pasos:[
+    {t:"Numerar es imprescindible",h:"El espacio equiprobable es $S=\\{1,\\dots,5\\}^{10}$ (a cada caramelo se le asigna un niño), con $5^{10}=9\\,765\\,625$ elementos."},
+    {t:"El modelo que NO sirve",h:"Registrar sólo cuántos recibe cada niño da $\\binom{14}{4}=1001$ repartos, pero no son equiprobables: $(2,2,2,2,2)$ es mucho más frecuente que $(10,0,0,0,0)$."},
+    {t:"Contar el evento",h:"Si el sobrino no recibe nada, los $10$ caramelos van a los otros $4$: $4^{10}$ formas."},
+    {t:"Resultado",h:"$P=(4/5)^{10}\\approx0{,}107$: una chance en nueve."},
+    {t:"Interpretación",h:"El promedio de $2$ caramelos por niño no impide que alguien quede afuera: el número esperado de niños sin caramelo es $5(4/5)^{10}\\approx0{,}54$."}
+  ],
+  sim:{
+    controles:[{id:"c",label:"Caramelos",min:1,max:40,step:1,val:10},
+               {id:"n",label:"Niños",min:2,max:12,step:1,val:5}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const P=Math.pow((p.n-1)/p.n,p.c), esp=p.n*P;
+      dosBarras(ctx,W,96,P,null,'P(el sobrino queda sin caramelo)');
+      /* dibujo de los niños con sus caramelos, semilla fija */
+      const R=LCG(4242+p.c*97+p.n), cuenta=new Array(p.n).fill(0);
+      for(let i=0;i<p.c;i++)cuenta[Math.floor(R()*p.n)]++;
+      const bw=Math.min(90,(W-120)/p.n), x0=(W-bw*p.n)/2;
+      T(ctx,'Un reparto concreto (semilla fija):',60,208,{s:13,col:'--muted'});
+      for(let j=0;j<p.n;j++){
+        const x=x0+j*bw, vac=cuenta[j]===0;
+        ctx.fillStyle=vac?alpha(C('--bad'),.28):alpha(C('--accent2'),.22);
+        RR(ctx,x+4,236,bw-8,72,8);ctx.fill();
+        ctx.strokeStyle=vac?C('--bad'):C('--accent2');ctx.lineWidth=1.6;ctx.stroke();
+        T(ctx,j===0?'sobrino':'niño '+(j+1),x+bw/2,256,{s:12,a:'center',col:'--muted'});
+        T(ctx,cuenta[j],x+bw/2,292,{s:26,b:1,a:'center',col:vac?'--bad':'--ink'});
+      }
+      T(ctx,'Niños sin caramelo esperados: '+num(esp,2),60,332,{s:13,col:'--warn'});
+      return {"P(sin caramelo)":num(P,5),"Vacíos esperados":num(esp,2),"|S|":p.n+'^'+p.c};
+    }
+  }
+},
+/* ════════════════ 7 ════════════════ */
+{
+  id:"ej7", g:"Ejercicios", titulo:"7. Cumpleaños compartido con 8 personas",
+  tema:"complemento · crecimiento cuadrático",
+  enunciado:"En una reunión hay $8$ personas. ¿Probabilidad de que al menos $2$ cumplan años el mismo día? ¿Qué suposiciones hacen falta?",
+  resultado:"$1-\\dfrac{365\\cdot364\\cdots358}{365^{8}}\\approx 0{,}07434$. \u00a0 Supuestos: año de $365$ días, cumpleaños uniformes e independientes.",
+  pasos:[
+    {t:"Los tres supuestos",h:"Año de $365$ días (sin bisiestos), cumpleaños uniformes sobre los $365$ días, e independencia entre las personas (nada de mellizos)."},
+    {t:"Por qué el complemento",h:"«Al menos dos coinciden» obligaría a sumar sobre todos los patrones; «los $8$ son distintos» se cuenta de una sola forma."},
+    {t:"Contar",h:"$P(\\text{todos distintos})=\\frac{365\\cdot364\\cdots358}{365^{8}}=\\prod_{k=0}^{7}(1-k/365)\\approx0{,}9257$."},
+    {t:"Resultado",h:"$P\\approx0{,}0743$, o sea $1$ de cada $13$ reuniones de $8$ personas."},
+    {t:"Crecimiento cuadrático",h:"Hay $\\binom{8}{2}=28$ pares y cada uno coincide con probabilidad $1/365$: $28/365\\approx0{,}077$ ya anticipa el valor. Por eso con $23$ personas se pasa el $50\\,\\%$."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Personas (n)",min:2,max:70,step:1,val:8},
+               {id:"d",label:"Días del año",min:12,max:365,step:1,val:365}],
+    acciones:[{label:"Simular 5 000 reuniones",fn:function(st,rp){st.go=(st.go||0)+1;rp();}}],
+    draw:function(ctx,W,H,p,st){p=ri(p);
+      const f=x=>{let q=1;const n=Math.round(x);for(let k=0;k<n;k++)q*=(1-k/p.d);return 1-q;};
+      curva(ctx,W,H,f,2,70,p.n,'P(al menos dos coinciden) con '+p.d+' días — mové n');
+      if(st.go){
+        const R=LCG(7*st.go+p.n*31+p.d), N=5000;let c=0;
+        for(let r=0;r<N;r++){
+          const s={};let hit=false;
+          for(let j=0;j<p.n;j++){const b=Math.floor(R()*p.d);if(s[b]){hit=true;break;}s[b]=1;}
+          if(hit)c++;
+        }
+        st.emp=c/N;
+      }
+      if(st.emp!==undefined)
+        T(ctx,'simulado: '+num(st.emp)+'  (5 000 reuniones)',W-45,H-24,{s:13.5,a:'right',col:'--accent2'});
+      return {"n":p.n,"P exacta":num(f(p.n),5),"Pares":Cnk(p.n,2),"n para 50 %":(function(){let n=1;while(f(n)<0.5&&n<400)n++;return n;})()};
+    }
+  }
+},
+/* ════════════════ 8 ════════════════ */
+{
+  id:"ej8", g:"Ejercicios", titulo:"8. Galileo: suma 9 contra suma 10",
+  tema:"multiconjuntos vs. resultados ordenados",
+  enunciado:"Con tres dados la suma $9$ se obtiene de seis formas ($126,135,144,225,234,333$) y la suma $10$ también de seis ($136,145,226,235,244,334$). Sin embargo es más fácil obtener $10$. ¿Por qué?",
+  resultado:"$P(9)=\\dfrac{25}{216}\\approx0{,}1157$ contra $P(10)=\\dfrac{27}{216}=0{,}125$: las «formas» no son equiprobables entre sí.",
+  pasos:[
+    {t:"El error del enunciado ingenuo",h:"Las «seis formas» son multiconjuntos de valores y no todos se realizan igual de seguido."},
+    {t:"El espacio correcto",h:"Ternas ordenadas: $S=\\{1,\\dots,6\\}^3$ con $6^3=216$ resultados equiprobables."},
+    {t:"Cuánto pesa cada forma",h:"Tres valores distintos $\\to 3!=6$ ternas; dos iguales $\\to 3$; tres iguales $\\to 1$."},
+    {t:"La cuenta",h:"Suma $9$: $6+6+3+3+6+1=25$. Suma $10$: $6+6+3+6+3+3=27$. El $333$ es el que hunde al $9$."},
+    {t:"Por qué tardó tanto en verse",h:"La diferencia es de $2/216\\approx0{,}93\\,\\%$: hacen falta miles de tiradas para notarla, y eso tenían los jugadores que consultaron a Galileo hacia 1620."}
+  ],
+  sim:{
+    controles:[{id:"s",label:"Suma objetivo",min:3,max:18,step:1,val:9},
+               {id:"comp",tipo:"check",label:"Comparar 9 y 10",val:1}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const c=new Array(19).fill(0);
+      for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)for(let d=1;d<=6;d++)c[a+b+d]++;
+      const vals=[],labs=[];
+      for(let s=3;s<=18;s++){vals.push(c[s]/216);labs.push(''+s);}
+      histo(ctx,W,H,vals,labs,k=>{const s=k+3;
+        if(p.comp)return (s===9||s===10)?'--warn':'--accent';
+        return s===p.s?'--warn':'--accent';},
+        'Distribución de la suma de tres dados sobre los 216 resultados ordenados');
+      return {"Suma":p.s,"Formas ordenadas":c[p.s],"P":num(c[p.s]/216,5),
+              "P(9) vs P(10)":num(c[9]/216,4)+'  vs  '+num(c[10]/216,4)};
+    }
+  }
+},
+/* ════════════════ 9 ════════════════ */
+{
+  id:"ej9", g:"Ejercicios", titulo:"9. La apuesta de De Méré",
+  tema:"al menos un éxito · complemento",
+  enunciado:"¿Qué es más probable: sacar al menos un $6$ en cuatro tiradas de un dado, o sacar al menos un doble seis en $24$ tiradas de dos dados?",
+  resultado:"$1-(5/6)^4=\\dfrac{671}{1296}\\approx0{,}51775$ contra $1-(35/36)^{24}\\approx0{,}49140$. \u00a0 Gana el primer juego.",
+  pasos:[
+    {t:"Complemento en los dos casos",h:"«Al menos uno» es incómodo; «ninguno» es un producto de independientes."},
+    {t:"Juego A",h:"$P=1-(5/6)^4=671/1296\\approx0{,}5177$: favorable, apenas."},
+    {t:"Juego B",h:"$P=1-(35/36)^{24}\\approx0{,}4914$: desfavorable, apenas."},
+    {t:"El razonamiento de De Méré",h:"Comparaba $4/6$ con $24/36$ y los veía iguales. Pero la probabilidad de «al menos uno» no es $np$ sino $1-(1-p)^n$."},
+    {t:"Dónde está la diferencia",h:"$1-(1-p)^n\\approx np-\\binom{n}{2}p^2$, y el término correctivo es mayor en el juego B. Pascal y Fermat lo zanjaron en 1654."}
+  ],
+  sim:{
+    controles:[{id:"k",label:"Tiradas del juego B",min:1,max:60,step:1,val:24},
+               {id:"m",label:"Tiradas del juego A",min:1,max:12,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const A=1-Math.pow(5/6,p.m), B=1-Math.pow(35/36,p.k);
+      bar(ctx,60,110,W-140,30,A,'--accent','Juego A: al menos un 6 en '+p.m+' tiradas',num(A));
+      bar(ctx,60,190,W-140,30,B,'--accent2','Juego B: al menos un doble 6 en '+p.k+' tiradas',num(B));
+      /* línea del 50 % */
+      const x50=60+(W-140)*0.5;
+      ctx.strokeStyle=C('--warn');ctx.lineWidth=2;ctx.setLineDash([6,5]);
+      ctx.beginPath();ctx.moveTo(x50,88);ctx.lineTo(x50,236);ctx.stroke();ctx.setLineDash([]);
+      T(ctx,'50 %',x50,80,{s:13,a:'center',col:'--warn',b:1});
+      T(ctx,A>B?'Gana A por '+num((A-B)*100,2)+' puntos':'Gana B por '+num((B-A)*100,2)+' puntos',
+        60,292,{s:16,b:1,col:'--warn'});
+      T(ctx,'Con 25 tiradas el juego B ya supera el 50 %: el margen es finísimo.',60,326,{s:13,col:'--muted'});
+      return {"P(A)":num(A,5),"P(B)":num(B,5),"Diferencia":num(A-B,5)};
+    }
+  }
+},
+/* ════════════════ 10 ════════════════ */
+{
+  id:"ej10", g:"Ejercicios", titulo:"10. Cinco dados: escalera, full, pierna…",
+  tema:"permutaciones con repetición",
+  enunciado:"Se arrojan $5$ dados distinguibles. Calcular la probabilidad de: (a) escalera; (b) full ($aaabb$); (c) pierna ($aaabc$); (d) un par ($aabcd$); (e) par doble ($aabbc$).",
+  resultado:"(a) $\\frac{240}{7776}=\\frac{5}{162}$ \u00a0 (b) $\\frac{300}{7776}=\\frac{25}{648}$ \u00a0 (c) $\\frac{1200}{7776}=\\frac{25}{162}$ \u00a0 (d) $\\frac{3600}{7776}=\\frac{25}{54}$ \u00a0 (e) $\\frac{1800}{7776}=\\frac{25}{108}$.",
+  pasos:[
+    {t:"Espacio",h:"Dados distinguibles: $S=\\{1,\\dots,6\\}^5$ con $6^5=7776$ resultados equiprobables."},
+    {t:"Escalera",h:"Sólo hay dos escaleras ($12345$ y $23456$), cada una con $5!=120$ ordenamientos: $240$ casos."},
+    {t:"Full y pierna",h:"Full: $6\\cdot5\\cdot\\binom53=300$. Pierna: $6\\cdot\\binom52\\cdot\\frac{5!}{3!}=1200$."},
+    {t:"El error del par doble",h:"Los dos valores que se repiten se eligen como conjunto, $\\binom62=15$, no $6\\cdot5=30$: si no, se cuenta cada mano dos veces."},
+    {t:"Control global",h:"$240+300+1200+3600+1800+150(\\text{póker})+6(\\text{generala})+480=7776$. Cierra exacto."},
+    {t:"La sorpresa",h:"$P(\\text{escalera})=3{,}09\\,\\%<P(\\text{full})=3{,}86\\,\\%$, aunque en la generala la escalera vale menos puntos que el full."}
+  ],
+  sim:{
+    controles:[{id:"c",label:"Caras del dado",min:5,max:10,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const c=p.c, tot=Math.pow(c,5);
+      const esc=(c-4)*120, full=c*(c-1)*10, pierna=c*Cnk(c-1,2)*20,
+            par=c*Cnk(c-1,3)*60, pardob=Cnk(c,2)*(c-2)*30;
+      const vals=[esc/tot,full/tot,pierna/tot,par/tot,pardob/tot];
+      const labs=['escalera','full','pierna','un par','par doble'];
+      histo(ctx,W,H,vals,labs,k=>k<2?'--warn':'--accent',
+        'Cinco dados de '+c+' caras   ·   '+tot+' resultados equiprobables');
+      T(ctx,'Con más caras hay más escaleras posibles, pero también muchos más resultados.',
+        60,H-8,{s:12.5,col:'--muted'});
+      return {"Escalera":num(esc/tot,5),"Full":num(full/tot,5),
+              "¿escalera < full?":esc<full?'sí':'no',"|S|":tot};
+    }
+  }
+},
+/* ════════════════ 11 ════════════════ */
+{
+  id:"ej11", g:"Ejercicios", titulo:"11. Los abrigos de Luis y Pedro",
+  tema:"inclusión-exclusión · dependencia",
+  enunciado:"Ocho personas (entre ellas Luis y Pedro) dejaron su abrigo en un perchero y al irse toman uno al azar. (a) ¿Probabilidad de que Luis tome el suyo y Pedro no? (b) ¿Probabilidad de que al menos uno de los dos tome el propio?",
+  resultado:"(a) $\\dfrac18-\\dfrac1{56}=\\dfrac{3}{28}\\approx0{,}10714$. \u00a0 (b) $\\dfrac{13}{56}\\approx0{,}23214$.",
+  pasos:[
+    {t:"Espacio muestral",h:"Permutaciones de $8$ abrigos entre $8$ personas: $8!=40\\,320$, equiprobables."},
+    {t:"Probabilidades básicas",h:"$P(L)=P(R)=7!/8!=1/8$ y $P(L\\cap R)=6!/8!=1/56$."},
+    {t:"NO son independientes",h:"$1/56\\neq(1/8)^2=1/64$. Si Luis acertó, quedan $7$ abrigos para $7$ personas y Pedro pasa a tener $1/7$."},
+    {t:"Inciso (a)",h:"$P(L\\cap R^c)=P(L)-P(L\\cap R)=1/8-1/56=3/28$."},
+    {t:"Inciso (b)",h:"$P(L\\cup R)=1/8+1/8-1/56=13/56$."},
+    {t:"El error típico",h:"Responder $\\frac18\\cdot\\frac78=\\frac{7}{64}\\approx0{,}1094$ en (a). Difiere poco, pero multiplicar sin verificar independencia es el error grave."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Personas (n)",min:2,max:20,step:1,val:8},
+               {id:"ind",tipo:"check",label:"Mostrar la respuesta ingenua P(L)·P(Rᶜ)",val:1}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n, a=1/n-1/(n*(n-1)), b=2/n-1/(n*(n-1)), ing=(1/n)*(1-1/n);
+      bar(ctx,60,100,W-140,28,a*3,'--accent','(a) Luis sí, Pedro no  (escala ×3)',num(a));
+      if(p.ind) bar(ctx,60,172,W-140,28,ing*3,'--bad','respuesta ingenua P(L)·P(Rᶜ)  (escala ×3)',num(ing));
+      bar(ctx,60,244,W-140,28,b*3,'--accent2','(b) al menos uno  (escala ×3)',num(b));
+      T(ctx,'P(L∩R) = 1/(n(n−1)) = '+num(1/(n*(n-1)),5)+
+        '     P(L)·P(R) = '+num(1/(n*n),5)+'   ← distintos',60,326,{s:13.5,col:'--warn'});
+      return {"n":n,"(a)":num(a,5),"(b)":num(b,5),"ingenua (a)":num(ing,5)};
+    }
+  }
+},
+/* ════════════════ 12 ════════════════ */
+{
+  id:"ej12", g:"Ejercicios", titulo:"12. Urna de tres colores",
+  tema:"con y sin reposición",
+  enunciado:"Una urna tiene $5$ bolillas rojas, $6$ azules y $8$ verdes; se eligen $3$ al azar. (a) ¿Todas del mismo color? (b) ¿Todas de distinto color? (c) Repetir con sustitución.",
+  resultado:"Sin sustitución: $\\frac{86}{969}\\approx0{,}0888$ y $\\frac{80}{323}\\approx0{,}2477$. \u00a0 Con sustitución: $\\frac{853}{6859}\\approx0{,}1244$ y $\\frac{1440}{6859}\\approx0{,}2099$.",
+  pasos:[
+    {t:"Sin sustitución",h:"$S$ = subconjuntos de tamaño $3$ de las $19$ bolillas: $\\binom{19}{3}=969$."},
+    {t:"Mismo color",h:"Los tres colores son casos disjuntos: $\\binom53+\\binom63+\\binom83=10+20+56=86$."},
+    {t:"Distinto color",h:"Una de cada color: $5\\cdot6\\cdot8=240$. Sin $3!$, porque el espacio es de subconjuntos."},
+    {t:"Con sustitución",h:"Ahora $S=\\{19\\}^3$ con $6859$ ternas ordenadas. Mismo color: $5^3+6^3+8^3=853$. Distinto: $3!\\cdot5\\cdot6\\cdot8=1440$, y aquí el $3!$ sí va."},
+    {t:"El efecto de reponer",h:"Reponer favorece la homogeneidad: sube el mismo color ($8{,}9\\to12{,}4\\,\\%$) y baja el distinto ($24{,}8\\to21{,}0\\,\\%$)."}
+  ],
+  sim:{
+    controles:[{id:"r",label:"Rojas",min:1,max:15,step:1,val:5},
+               {id:"a",label:"Azules",min:1,max:15,step:1,val:6},
+               {id:"v",label:"Verdes",min:1,max:15,step:1,val:8},
+               {id:"rep",tipo:"check",label:"Con sustitución",val:0}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const r=p.r,a=p.a,v=p.v,N=r+a+v;
+      let mismo,dist;
+      if(p.rep){mismo=(r*r*r+a*a*a+v*v*v)/(N*N*N);dist=6*r*a*v/(N*N*N);}
+      else{mismo=(Cnk(r,3)+Cnk(a,3)+Cnk(v,3))/Cnk(N,3);dist=r*a*v/Cnk(N,3);}
+      /* la urna dibujada */
+      const cols=[['--bad',r],['--accent',a],['--accent2',v]];
+      let x=70;
+      T(ctx,'Urna: '+N+' bolillas',60,32,{s:13,col:'--muted'});
+      cols.forEach(cc=>{for(let i=0;i<cc[1];i++){
+        ctx.fillStyle=alpha(C(cc[0]),.75);ctx.beginPath();ctx.arc(x,64,11,0,7);ctx.fill();x+=25;}});
+      bar(ctx,60,140,W-140,28,mismo,'--accent','P(las tres del mismo color)',num(mismo));
+      bar(ctx,60,212,W-140,28,dist,'--accent2','P(las tres de distinto color)',num(dist));
+      T(ctx,p.rep?'Modo: CON sustitución (ternas ordenadas, '+(N*N*N)+' casos)'
+                 :'Modo: SIN sustitución (subconjuntos, '+Cnk(N,3)+' casos)',
+        60,288,{s:14,b:1,col:'--warn'});
+      T(ctx,'Probá poner los tres colores iguales: el «mismo color» toca su mínimo.',60,320,{s:12.5,col:'--muted'});
+      return {"Mismo color":num(mismo),"Distinto color":num(dist),"N":N};
+    }
+  }
+},
+/* ════════════════ 13 ════════════════ */
+{
+  id:"ej13", g:"Ejercicios", titulo:"13. El alumno que estudió 7 de 10",
+  tema:"hipergeométrica",
+  enunciado:"Un profesor da $10$ problemas y tomará $5$ en el final. El alumno estudió $7$. ¿Probabilidad de contestar correctamente (a) los $5$? (b) al menos $4$?",
+  resultado:"(a) $\\dfrac{\\binom75}{\\binom{10}5}=\\dfrac{1}{12}\\approx0{,}0833$. \u00a0 (b) $\\dfrac{126}{252}=\\dfrac12$.",
+  pasos:[
+    {t:"El examen es la muestra",h:"$S$ = subconjuntos de $5$ problemas de los $10$: $\\binom{10}{5}=252$."},
+    {t:"Variable hipergeométrica",h:"$X$ = problemas del examen que estudió: $P(X=k)=\\binom7k\\binom3{5-k}/\\binom{10}5$."},
+    {t:"El rango de X",h:"Como sólo hay $3$ problemas no estudiados, forzosamente $X\\geq2$."},
+    {t:"Los dos incisos",h:"$P(X=5)=21/252=1/12$; $P(X\\geq4)=(21+105)/252=1/2$."},
+    {t:"Cuánto rinde estudiar más",h:"Con $8$ estudiados, $P(X\\geq4)$ salta a $\\approx0{,}778$. El rendimiento es muy no lineal."}
+  ],
+  sim:{
+    controles:[{id:"e",label:"Problemas estudiados",min:0,max:10,step:1,val:7},
+               {id:"t",label:"Problemas del examen",min:1,max:10,step:1,val:5}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const N=10,e=p.e,t=p.t,tot=Cnk(N,t);
+      const vals=[],labs=[];
+      for(let k=0;k<=t;k++){vals.push(Cnk(e,k)*Cnk(N-e,t-k)/tot);labs.push(''+k);}
+      histo(ctx,W,H,vals,labs,k=>k>=t-1?'--accent2':'--accent',
+        'P(k problemas conocidos en un examen de '+t+', habiendo estudiado '+e+' de 10)');
+      let todos=vals[t]||0, alm=(vals[t]||0)+(vals[t-1]||0);
+      return {"P(todos)":num(todos,5),"P(al menos t−1)":num(alm,5),"|S|":tot};
+    }
+  }
+},
+/* ════════════════ 14 ════════════════ */
+{
+  id:"ej14", g:"Ejercicios", titulo:"14. Ni múltiplo de 2, 3, 5 ni 7",
+  tema:"inclusión-exclusión · criba",
+  enunciado:"Se elige al azar un entero entre $1$ y $100\\,000$. ¿Probabilidad de que no sea múltiplo ni de $2$, ni de $3$, ni de $5$, ni de $7$?",
+  resultado:"$\\dfrac{22\\,857}{100\\,000}=0{,}22857$, prácticamente igual a $\\frac12\\cdot\\frac23\\cdot\\frac45\\cdot\\frac67=\\frac{8}{35}$.",
+  pasos:[
+    {t:"El evento y su complemento",h:"$A_p$ = «múltiplo de $p$», con $\\#A_p=\\lfloor N/p\\rfloor$. Se pide $P((A_2\\cup A_3\\cup A_5\\cup A_7)^c)$."},
+    {t:"Inclusión-exclusión",h:"Como $2,3,5,7$ son primos distintos, múltiplo de dos de ellos $=$ múltiplo del producto."},
+    {t:"Las cuatro capas",h:"Simples $117\\,618$; dobles $48\\,092$; triples $8\\,093$; cuádruple $476$."},
+    {t:"La cuenta",h:"$117\\,618-48\\,092+8\\,093-476=77\\,143$ múltiplos, luego $22\\,857$ sobrevivientes."},
+    {t:"El atajo del producto",h:"Si $N$ fuera múltiplo de $210$ la respuesta sería exactamente $\\frac12\\frac23\\frac45\\frac67=\\frac{8}{35}$. La diferencia aparece recién en la sexta cifra."}
+  ],
+  sim:{
+    controles:[{id:"p1",tipo:"check",label:"2",val:1},{id:"p2",tipo:"check",label:"3",val:1},
+               {id:"p3",tipo:"check",label:"5",val:1},{id:"p4",tipo:"check",label:"7",val:1},
+               {id:"p5",tipo:"check",label:"11",val:0},{id:"p6",tipo:"check",label:"13",val:0}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const N=100000, ps=[];
+      [[p.p1,2],[p.p2,3],[p.p3,5],[p.p4,7],[p.p5,11],[p.p6,13]].forEach(x=>{if(x[0])ps.push(x[1]);});
+      let uni=0;
+      for(let m=1;m<(1<<ps.length);m++){
+        let prod=1,bits=0;
+        for(let i=0;i<ps.length;i++)if(m&(1<<i)){prod*=ps[i];bits++;}
+        uni+=(bits%2?1:-1)*Math.floor(N/prod);
+      }
+      const sob=N-uni, P=sob/N;
+      let prodT=1;ps.forEach(q=>prodT*=(1-1/q));
+      /* grilla de 100×100 = los primeros 10 000 enteros, coloreada */
+      const g=100,cell=Math.min(2.6,(H-90)/g);
+      const x0=W-g*cell-40, y0=44;
+      for(let i=0;i<g;i++)for(let j=0;j<g;j++){
+        const v=i*g+j+1;
+        const surv=ps.every(q=>v%q!==0);
+        ctx.fillStyle=surv?C('--accent2'):alpha(C('--line'),.85);
+        ctx.fillRect(x0+j*cell,y0+i*cell,cell-0.4,cell-0.4);
+      }
+      T(ctx,'los primeros 10 000 enteros; en verde los que sobreviven',x0,y0-10,{s:12,col:'--muted'});
+      bar(ctx,60,140,x0-110,26,P,'--accent','P(no múltiplo de los primos marcados)',num(P,5));
+      T(ctx,'producto ∏(1−1/p) = '+num(prodT,6),60,228,{s:14,col:'--warn'});
+      T(ctx,'exacto por criba   = '+num(P,6),60,258,{s:14,col:'--warn'});
+      T(ctx,'Sacá el 2 y mirá cómo salta: es el primo que más criba.',60,306,{s:12.5,col:'--muted'});
+      return {"Primos":ps.join(', ')||'ninguno',"Sobrevivientes":sob,"P":num(P,6),"∏(1−1/p)":num(prodT,6)};
+    }
+  }
+},
+/* ════════════════ COMPLEMENTARIOS ════════════════ */
+{
+  id:"c1", g:"Complementarios", titulo:"15. Mensajes binarios de 10 dígitos o menos",
+  tema:"suma de una progresión geométrica",
+  enunciado:"Mensajes en código binario ($0$ y $1$). ¿Cuántos mensajes es posible enviar con $10$ dígitos o menos?",
+  resultado:"$\\displaystyle\\sum_{k=1}^{10}2^{k}=2^{11}-2=2046$. \u00a0 (Si se admite el mensaje vacío, $2047$.)",
+  pasos:[
+    {t:"Por longitud",h:"Hay $2^k$ mensajes de exactamente $k$ dígitos."},
+    {t:"Longitudes excluyentes",h:"Un mensaje tiene una única longitud, así que las cantidades se suman."},
+    {t:"Serie geométrica",h:"$\\sum_{k=1}^{10}2^k=2\\frac{2^{10}-1}{2-1}=2^{11}-2=2046$."},
+    {t:"El convenio del vacío",h:"Si se cuenta $k=0$ el total es $2047=2^{11}-1$. Conviene aclararlo al responder."}
+  ],
+  sim:{
+    controles:[{id:"L",label:"Longitud máxima",min:1,max:16,step:1,val:10},
+               {id:"b",label:"Símbolos del alfabeto",min:2,max:10,step:1,val:2}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      let tot=0;const vals=[],labs=[];
+      for(let k=1;k<=p.L;k++){tot+=Math.pow(p.b,k);vals.push(Math.pow(p.b,k));labs.push(''+k);}
+      histo(ctx,W,H,vals.map(v=>v/tot),labs,'--accent',
+        'Peso relativo de cada longitud (el último escalón se lleva casi todo)');
+      T(ctx,'Total = '+tot.toLocaleString('es-AR'),60,H-8,{s:14,b:1,col:'--warn'});
+      return {"Total":tot,"Fórmula":p.b===2?'2^(L+1) − 2':'b(b^L−1)/(b−1)',
+              "Fracción de la última longitud":num(vals[vals.length-1]/tot,4)};
+    }
+  }
+},
+{
+  id:"c2", g:"Complementarios", titulo:"16. El bolillero decreciente",
+  tema:"espacio finito NO equiprobable",
+  enunciado:"De un bolillero con bolillas $1..5$ se extrae una, la $k$; luego se extrae entre las de número $\\leq k$, sea $j$; luego entre las de número $\\leq j$. (a) Describir $S$ y contarlo. (b) ¿Es razonable pedir equiprobabilidad? ¿Qué probabilidad tiene el $(1,1,1)$?",
+  resultado:"(a) $S=\\{(k,j,i):5\\geq k\\geq j\\geq i\\geq1\\}$, $|S|=\\binom73=35$. \u00a0 (b) No: $P(k,j,i)=\\frac{1}{5k j}$, y $P(1,1,1)=\\frac15=0{,}2$ contra $P(5,5,5)=\\frac1{125}$.",
+  pasos:[
+    {t:"Qué registra un resultado",h:"La terna $(k,j,i)$, con la restricción $k\\geq j\\geq i$ impuesta por el mecanismo."},
+    {t:"Contar ternas no crecientes",h:"Equivale a elegir un multiconjunto de tamaño $3$ sobre $5$ símbolos: $\\binom{5+3-1}{3}=\\binom73=35$."},
+    {t:"La probabilidad de cada terna",h:"$P(k,j,i)=\\frac15\\cdot\\frac1k\\cdot\\frac1j$: depende de la terna, no es constante."},
+    {t:"El caso extremo",h:"$P(1,1,1)=1/5$, veinticinco veces más que $P(5,5,5)=1/125$. Si fuera equiprobable, cada terna valdría $1/35\\approx0{,}029$."},
+    {t:"Por qué",h:"Sacar un $1$ al principio obliga a que todo lo demás sea $1$: es un estado absorbente. Espacio finito bien definido no implica equiprobable."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Bolillas (n)",min:2,max:8,step:1,val:5}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n,S=[];
+      for(let k=1;k<=n;k++)for(let j=1;j<=k;j++)for(let i=1;i<=j;i++)
+        S.push({t:'('+k+','+j+','+i+')',pr:1/(n*k*j)});
+      const unif=1/S.length;
+      const cols=Math.min(7,Math.ceil(Math.sqrt(S.length*1.7)));
+      const rows=Math.ceil(S.length/cols),pad=16,top=52;
+      const cw=Math.min(130,(W-2*pad)/cols), ch=Math.min(46,(H-top-30)/rows);
+      const x0=(W-cw*cols)/2, y0=top;
+      const mx=Math.max.apply(null,S.map(s=>s.pr));
+      T(ctx,'|S| = '+S.length+'   ·   si fuera equiprobable cada terna valdría '+num(unif,4)+
+            ' — el color mide cuánto se aparta',pad,30,{s:12.5,col:'--muted'});
+      S.forEach((s,k)=>{
+        const r=Math.floor(k/cols),c=k%cols;
+        const x=x0+c*cw+3,y=y0+r*ch+2,w=cw-6,h=ch-5;
+        ctx.fillStyle=alpha(C(s.pr>unif?'--warn':'--accent'),0.12+0.75*s.pr/mx);
+        RR(ctx,x,y,w,h,6);ctx.fill();
+        ctx.strokeStyle=C('--line');ctx.lineWidth=1;ctx.stroke();
+        T(ctx,s.t,x+w/2,y+h/2-1,{s:12.5,a:'center',b:1});
+        T(ctx,num(s.pr,3),x+w/2,y+h/2+14,{s:11,a:'center',col:'--muted'});
+      });
+      return {"|S|":S.length,"P(1,1,1)":num(1/n,4),"P(n,n,n)":num(1/(n*n*n),5),
+              "Si fuera uniforme":num(unif,4)};
+    }
+  }
+},
+{
+  id:"c3", g:"Complementarios", titulo:"17. Raíces reales con dos dados",
+  tema:"espacio finito · condición algebraica",
+  enunciado:"Se lanzan dos dados: $a$ el primero, $b$ el segundo. ¿Probabilidad de que $x^{2}+ax+b^{2}=0$ tenga raíces reales?",
+  resultado:"$\\Delta=a^{2}-4b^{2}\\geq0\\iff a\\geq 2b$. \u00a0 Hay $9$ casos de $36$: $P=\\dfrac14=0{,}25$.",
+  pasos:[
+    {t:"Espacio",h:"$S=\\{1,\\dots,6\\}^2$ con $36$ resultados equiprobables."},
+    {t:"Traducir la condición",h:"Raíces reales $\\iff \\Delta=a^2-4b^2\\geq0\\iff a^2\\geq(2b)^2$."},
+    {t:"Sacar la raíz",h:"Como $a>0$ y $2b>0$, la condición es simplemente $a\\geq 2b$."},
+    {t:"Contar por filas",h:"$b=1$: $a\\in\\{2,\\dots,6\\}$ ($5$); $b=2$: $\\{4,5,6\\}$ ($3$); $b=3$: $\\{6\\}$ ($1$); $b\\geq4$: ninguno."},
+    {t:"Resultado",h:"$9/36=1/4$. Con $b\\geq4$ la parábola queda entera por encima del eje."}
+  ],
+  sim:{
+    controles:[{id:"c",label:"Coeficiente de b (Δ = a² − c·b²)",min:1,max:9,step:1,val:4},
+               {id:"caras",label:"Caras de los dados",min:3,max:10,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.caras;let fav=0;
+      const cell=Math.min(46,(H-92)/n,(W-360)/n);
+      const x0=60,y0=54;
+      T(ctx,'a → (primer dado)',x0,40,{s:12.5,col:'--muted'});
+      for(let b=1;b<=n;b++)for(let a=1;a<=n;a++){
+        const on=a*a>=p.c*b*b;if(on&&b===1)fav+=0;
+        if(on)fav++;
+        const x=x0+(a-1)*cell,y=y0+(b-1)*cell;
+        ctx.fillStyle=on?alpha(C('--accent2'),.45):C('--panel');
+        RR(ctx,x+1,y+1,cell-3,cell-3,5);ctx.fill();
+        ctx.strokeStyle=on?C('--accent2'):C('--line');ctx.lineWidth=on?1.5:1;ctx.stroke();
+      }
+      for(let k=1;k<=n;k++){
+        T(ctx,k,x0+(k-1)*cell+cell/2,y0-6,{s:12,a:'center',col:'--muted'});
+        T(ctx,k,x0-8,y0+(k-1)*cell+cell/2+4,{s:12,a:'right',col:'--muted'});
+      }
+      T(ctx,'b ↓',x0-40,y0+n*cell/2,{s:12.5,col:'--muted'});
+      const P=fav/(n*n);
+      const bx=x0+n*cell+50;
+      bar(ctx,bx,120,W-bx-40,28,P,'--accent2','P(raíces reales)',num(P));
+      T(ctx,'condición: a ≥ √'+p.c+'·b',bx,200,{s:15,b:1,col:'--warn'});
+      T(ctx,fav+' casos de '+(n*n),bx,232,{s:14,col:'--muted'});
+      return {"Favorables":fav,"|S|":n*n,"P":num(P)};
+    }
+  }
+},
+{
+  id:"c4", g:"Complementarios", titulo:"18. Cinco hombres y cinco mujeres",
+  tema:"simetría · estadístico de orden",
+  enunciado:"Cinco hombres y cinco mujeres se ordenan por nota (los $10!$ órdenes son equiprobables). (a) ¿Probabilidad de que una mujer obtenga el tercer puesto? (b) ¿De que el puesto más alto alcanzado por una mujer sea el sexto?",
+  resultado:"(a) $\\dfrac{5}{10}=\\dfrac12$. \u00a0 (b) $\\dfrac{1}{\\binom{10}{5}}=\\dfrac{1}{252}\\approx0{,}00397$.",
+  pasos:[
+    {t:"Reducir el espacio",h:"Sólo importa el género de cada puesto: palabras con $5$ M y $5$ H, $\\binom{10}5=252$, todas con la misma probabilidad."},
+    {t:"Inciso (a) por simetría",h:"El puesto $3$ lo ocupa una persona cualquiera; la mitad son mujeres: $P=1/2$. Sin contar nada."},
+    {t:"Traducir el inciso (b)",h:"«Más alto $=6$» significa que los puestos $1$ a $5$ son todos varones."},
+    {t:"Contar",h:"Hay una sola forma de llenar los primeros cinco lugares con los cinco varones: $P=1/\\binom{10}5=1/252$."},
+    {t:"Interpretación",h:"Es el peor escenario posible y ocurre menos de $4$ veces en mil."}
+  ],
+  sim:{
+    controles:[{id:"m",label:"Mujeres = Hombres",min:2,max:9,step:1,val:5},
+               {id:"j",label:"Puesto más alto de una mujer",min:1,max:10,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const m=p.m,N=2*m,tot=Cnk(N,m);
+      const vals=[],labs=[];
+      for(let j=1;j<=m+1;j++){vals.push(Cnk(N-j,m-1)/tot);labs.push(''+j);}
+      histo(ctx,W,H,vals,labs,k=>(k+1)===p.j?'--warn':'--accent',
+        'P(el puesto más alto de una mujer sea j)   ·   '+m+' mujeres y '+m+' hombres');
+      const P=p.j<=m+1?vals[p.j-1]:0;
+      return {"P(puesto más alto = j)":num(P,5),"P(mujer en el 3.º)":num(0.5,4),"|S|":tot};
+    }
+  }
+},
+{
+  id:"c5", g:"Complementarios", titulo:"19 / 21. Tres matrimonios en seis butacas",
+  tema:"bloques · inclusión-exclusión",
+  enunciado:"Tres matrimonios se sientan al azar en una fila de seis asientos. (a) ¿Probabilidad de que Juan y Paula ocupen los dos asientos de la extrema izquierda? (b) ¿De que queden contiguos? (c) ¿De que por lo menos una esposa quede junto a su marido?",
+  resultado:"(a) $\\dfrac{2!\\,4!}{6!}=\\dfrac1{15}$. \u00a0 (b) $\\dfrac{2\\cdot5!}{6!}=\\dfrac13$. \u00a0 (c) $3\\cdot\\frac13-3\\cdot\\frac2{15}+\\frac1{15}=\\dfrac23$.",
+  pasos:[
+    {t:"Espacio",h:"Permutaciones de $6$ personas en $6$ asientos: $6!=720$."},
+    {t:"Inciso (a)",h:"Dos órdenes internos para la pareja y $4!$ para el resto: $2!\\,4!/6!=1/15$."},
+    {t:"La técnica del bloque",h:"Pegar una pareja deja $5$ objetos, que se ordenan de $5!$ formas, por $2$ órdenes internos: $2\\cdot5!/6!=1/3$."},
+    {t:"Con $k$ bloques",h:"$P(k\\text{ parejas juntas})=2^k(6-k)!/6!$: da $1/3$, $2/15$ y $1/15$ para $k=1,2,3$."},
+    {t:"Inclusión-exclusión",h:"$3(1/3)-3(2/15)+1/15=1-6/15+1/15=2/3$. Sumar los tres tercios daría $1$, que es absurdo."},
+    {t:"Verificación",h:"Enumerando las $720$ permutaciones: $480$ tienen al menos una pareja junta. $480/720=2/3$ exacto."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Matrimonios (n) — hay 2n asientos",min:1,max:6,step:1,val:3}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n,N=2*n;
+      let P=0;
+      for(let k=1;k<=n;k++){
+        const term=Cnk(n,k)*Math.pow(2,k)*fact(N-k)/fact(N);
+        P+=(k%2?1:-1)*term;
+      }
+      const uno=2*fact(N-1)/fact(N);
+      /* fila de asientos con una disposición de ejemplo */
+      const sw=Math.min(80,(W-140)/N), x0=(W-sw*N)/2;
+      const R=LCG(9000+n),ord=[];for(let i=0;i<N;i++)ord.push(i);
+      for(let i=N-1;i>0;i--){const q=Math.floor(R()*(i+1));const t=ord[i];ord[i]=ord[q];ord[q]=t;}
+      const pos={};ord.forEach((v,k)=>pos[v]=k);
+      T(ctx,'Una disposición al azar (semilla fija): en verde las parejas contiguas',60,34,{s:13,col:'--muted'});
+      for(let s=0;s<N;s++){
+        const per=ord[s], par=Math.floor(per/2);
+        const otro=per%2===0?per+1:per-1;
+        const junto=Math.abs(pos[per]-pos[otro])===1;
+        ctx.fillStyle=junto?alpha(C('--accent2'),.3):C('--panel');
+        RR(ctx,x0+s*sw+3,60,sw-6,64,8);ctx.fill();
+        ctx.strokeStyle=junto?C('--accent2'):C('--line');ctx.lineWidth=junto?2:1;ctx.stroke();
+        T(ctx,(per%2?'♀':'♂')+(par+1),x0+s*sw+sw/2,100,{s:22,b:1,a:'center'});
+      }
+      bar(ctx,60,190,W-140,28,uno,'--accent','P(una pareja fija queda contigua)',num(uno));
+      bar(ctx,60,262,W-140,28,P,'--accent2','P(al menos una pareja contigua)',num(P));
+      T(ctx,'Con n=3: 1/3 y 2/3. Sumar 3·(1/3) daría certeza — hay que restar las intersecciones.',
+        60,326,{s:12.5,col:'--muted'});
+      return {"n":n,"P(una fija)":num(uno),"P(al menos una)":num(P),"Asientos":N};
+    }
+  }
+},
+{
+  id:"c6", g:"Complementarios", titulo:"20. Cuatro técnicos, cuatro televisores",
+  tema:"funciones sobreyectivas · ocupación",
+  enunciado:"Hay $4$ técnicos y se descompusieron $4$ televisores; cada uno llama a un técnico al azar. (a) ¿Probabilidad de que el técnico $A$ sea llamado? (b) ¿De que exactamente $k$ técnicos sean llamados?",
+  resultado:"(a) $1-(3/4)^4=\\dfrac{175}{256}\\approx0{,}6836$. \u00a0 (b) $P(1)=\\frac1{64}$, $P(2)=\\frac{21}{64}$, $P(3)=\\frac9{16}$, $P(4)=\\frac3{32}$.",
+  pasos:[
+    {t:"Espacio",h:"Una función televisor $\\to$ técnico: $S=\\{1,2,3,4\\}^4$ con $4^4=256$ elementos."},
+    {t:"Inciso (a) por complemento",h:"Que $A$ no sea llamado significa que los $4$ eligen entre los otros $3$: $(3/4)^4=81/256$."},
+    {t:"Exactamente $k$ técnicos",h:"Elegir cuáles ($\\binom4k$) y contar las funciones sobreyectivas sobre esos $k$."},
+    {t:"Sobreyectivas",h:"$\\mathrm{Sur}(4,k)=\\sum_j(-1)^j\\binom kj(k-j)^4$: vale $1,14,36,24$ para $k=1,2,3,4$."},
+    {t:"La moda no es el máximo",h:"$4+84+144+24=256$: lo más probable ($56\\,\\%$) es que trabajen $3$ y uno quede libre. Que trabajen los cuatro tiene menos de $1$ chance en $10$."}
+  ],
+  sim:{
+    controles:[{id:"t",label:"Técnicos",min:2,max:8,step:1,val:4},
+               {id:"v",label:"Televisores",min:1,max:10,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const t=p.t,v=p.v,tot=Math.pow(t,v);
+      const vals=[],labs=[];
+      for(let k=1;k<=Math.min(t,v);k++){
+        let sur=0;for(let j=0;j<=k;j++)sur+=(j%2?-1:1)*Cnk(k,j)*Math.pow(k-j,v);
+        vals.push(Cnk(t,k)*sur/tot);labs.push(''+k);
+      }
+      histo(ctx,W,H,vals,labs,'--accent',
+        'P(exactamente k técnicos llamados)   ·   '+t+' técnicos, '+v+' televisores');
+      const pa=1-Math.pow((t-1)/t,v);
+      T(ctx,'P(el técnico A es llamado) = 1 − ('+(t-1)+'/'+t+')^'+v+' = '+num(pa,5),
+        60,H-8,{s:13.5,b:1,col:'--warn'});
+      return {"P(A llamado)":num(pa,5),"P(todos trabajan)":num(vals[vals.length-1]||0,5),"|S|":tot};
+    }
+  }
+},
+{
+  id:"c7", g:"Complementarios", titulo:"21. Matrimonios completos en el grupo",
+  tema:"hipergeométrica encubierta",
+  enunciado:"Entre $10$ matrimonios se eligen $4$ mujeres y $4$ hombres. Hallar la probabilidad de que estén presentes ambos cónyuges de exactamente $k$ matrimonios, $k=0,\\dots,4$.",
+  resultado:"$P(k)=\\dfrac{\\binom4k\\binom6{4-k}}{\\binom{10}4}$: \u00a0 $\\frac1{14}$, $\\frac8{21}$, $\\frac37$, $\\frac4{35}$, $\\frac1{210}$.",
+  pasos:[
+    {t:"Traducir a índices",h:"$W$ = índices de las mujeres elegidas, $M$ = de los hombres, ambos de tamaño $4$. El número de matrimonios completos es $|W\\cap M|$."},
+    {t:"Espacio",h:"$|S|=\\binom{10}4^2=44\\,100$ pares $(W,M)$ equiprobables."},
+    {t:"Es una hipergeométrica",h:"Fijado $W$, contar cuántos de sus $4$ índices caen en $M$ es muestrear $4$ de $10$ con $4$ marcados."},
+    {t:"La fórmula",h:"$P(K=k)=\\binom4k\\binom6{4-k}/\\binom{10}4$, que da $3150,16800,18900,5040,210$ casos."},
+    {t:"Control e interpretación",h:"Suman $44\\,100$. Lo más probable son $2$ matrimonios ($42{,}9\\,\\%$); los cuatro, $1$ en $210$. $E[K]=4\\cdot\\frac4{10}=1{,}6$."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Matrimonios (n)",min:4,max:20,step:1,val:10},
+               {id:"g",label:"Elegidos de cada sexo",min:1,max:8,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n,g=Math.min(p.g,n),tot=Cnk(n,g);
+      const vals=[],labs=[];
+      for(let k=0;k<=g;k++){vals.push(Cnk(g,k)*Cnk(n-g,g-k)/tot);labs.push(''+k);}
+      histo(ctx,W,H,vals,labs,'--accent',
+        'P(exactamente k matrimonios completos)   ·   '+n+' matrimonios, '+g+' de cada sexo');
+      const E=g*g/n;
+      T(ctx,'E[K] = g²/n = '+num(E,3),60,H-8,{s:13.5,b:1,col:'--warn'});
+      return {"E[K]":num(E,3),"P(K=0)":num(vals[0],5),"P(K=g)":num(vals[g],6),"|S|":tot*tot};
+    }
+  }
+},
+{
+  id:"c8", g:"Complementarios", titulo:"22. Ocho números sin repetidos contiguos",
+  tema:"inclusión-exclusión con bloques",
+  enunciado:"Se forma una fila de $8$ números con dos $1$, dos $2$, dos $3$ y dos $4$. ¿Probabilidad de que no haya números iguales consecutivos?",
+  resultado:"$\\dfrac{864}{2520}=\\dfrac{12}{35}\\approx0{,}342857$, con $|S|=\\dfrac{8!}{2^4}=2520$.",
+  pasos:[
+    {t:"Espacio",h:"Palabras distintas con esas ocho cifras: $8!/(2!)^4=2520$, todas igual de probables."},
+    {t:"Los eventos malos",h:"$B_i$ = «las dos copias del número $i$ están juntas»."},
+    {t:"Pegar $k$ pares",h:"Quedan $8-k$ símbolos y $4-k$ pares sueltos: $\\#\\bigcap B_i=(8-k)!/2^{4-k}$."},
+    {t:"Alternar signos",h:"$\\sum_k(-1)^k\\binom4k\\frac{(8-k)!}{2^{4-k}}=2520-2520+1080-240+24=864$."},
+    {t:"Lo llamativo",h:"El término $k=1$ cancela exactamente al $k=0$: lo que sobrevive son las correcciones de orden superior. Sólo un tercio de las filas evita todas las repeticiones."}
+  ],
+  sim:{
+    controles:[{id:"m",label:"Pares distintos (m) — fila de 2m",min:1,max:7,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const m=p.m,N=2*m,tot=fact(N)/Math.pow(2,m);
+      let fav=0;for(let k=0;k<=m;k++)fav+=(k%2?-1:1)*Cnk(m,k)*fact(N-k)/Math.pow(2,m-k);
+      fav=Math.round(fav);
+      const P=fav/tot;
+      /* términos de la inclusión-exclusión */
+      const terms=[],labs=[];
+      for(let k=0;k<=m;k++){terms.push(Cnk(m,k)*fact(N-k)/Math.pow(2,m-k));labs.push('k='+k);}
+      const mx=Math.max.apply(null,terms);
+      const L=60,B=H-96,T0=60,bw=(W-100-L)/terms.length;
+      T(ctx,'Términos de la inclusión-exclusión (alternan signo)',L,34,{s:13,col:'--muted'});
+      terms.forEach((v,k)=>{
+        const h=(B-T0)*v/mx,x=L+k*bw;
+        ctx.fillStyle=alpha(C(k%2?'--bad':'--accent'),.8);
+        RR(ctx,x+bw*0.15,B-h,bw*0.7,h,5);ctx.fill();
+        T(ctx,(k%2?'−':'+')+Math.round(v),x+bw*0.5,B-h-8,{s:12,a:'center',b:1});
+        T(ctx,labs[k],x+bw*0.5,B+18,{s:12,a:'center',col:'--muted'});
+      });
+      bar(ctx,L,H-46,W-100-L,22,P,'--accent2','P(ninguno repetido contiguo) = '+fav+'/'+tot,num(P));
+      return {"m":m,"Favorables":fav,"|S|":tot,"P":num(P,5)};
+    }
+  }
+},
+/* ════════════════ ADICIONALES ════════════════ */
+{
+  id:"a1", g:"Adicionales", titulo:"A1. Alfajores en cuatro cajas",
+  tema:"complemento · reparto en cajas",
+  enunciado:"Se distribuyen al azar $12$ alfajores en $4$ cajas de $3$. Con $9$ de dulce de leche y $3$ de fruta, ¿probabilidad de que por lo menos una caja tenga $2$ de dulce de leche y $1$ de fruta? <br><small>(El enunciado original dice «$7$ de dulce de leche y $3$ de fruta», que suman $10$ y no $12$.)</small>",
+  resultado:"$1-\\dfrac{4}{\\binom{12}{3}}=1-\\dfrac{4}{220}=\\dfrac{54}{55}\\approx0{,}98182$. \u00a0 (Con $7$ y $5$: $\\frac{21}{22}\\approx0{,}9545$.)",
+  pasos:[
+    {t:"El reparto se reduce a las frutas",h:"Basta decir cuáles $3$ de las $12$ posiciones ocupan los alfajores de fruta: $\\binom{12}{3}=220$ repartos equiprobables."},
+    {t:"Traducir el evento",h:"Como cada caja tiene $3$ lugares, «$2$ de dulce de leche y $1$ de fruta» equivale a «esa caja recibe exactamente una fruta»."},
+    {t:"Los tres patrones",h:"Las $3$ frutas se reparten como $(3,0,0,0)$, $(2,1,0,0)$ o $(1,1,1,0)$: $4$, $108$ y $108$ casos."},
+    {t:"Complemento",h:"El único patrón sin ninguna caja de exactamente una fruta es $(3,0,0,0)$: $4$ casos."},
+    {t:"Resultado",h:"$P=1-4/220=54/55\\approx0{,}982$. Es casi seguro: fallar exige que las tres frutas caigan juntas."}
+  ],
+  sim:{
+    controles:[{id:"f",label:"Alfajores de fruta",min:1,max:8,step:1,val:3},
+               {id:"cj",label:"Cajas",min:2,max:6,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      /* cajas de 3, total 3*cj posiciones; enumeración por composiciones */
+      const cj=p.cj,cap=3,Ntot=cj*cap,f=Math.min(p.f,Ntot);
+      /* contar repartos (n1..ncj) con suma f, cada ni<=3, peso prod C(3,ni) */
+      let tot=0,bad=0;
+      const rec=(i,rest,peso,tiene1)=>{
+        if(i===cj){if(rest===0){tot+=peso;if(!tiene1)bad+=peso;}return;}
+        for(let k=0;k<=Math.min(cap,rest);k++)rec(i+1,rest-k,peso*Cnk(cap,k),tiene1||k===1);
+      };
+      rec(0,f,1,false);
+      const P=(tot-bad)/tot;
+      T(ctx,cj+' cajas de 3 lugares   ·   '+f+' alfajores de fruta   ·   '+tot+' repartos',60,34,{s:13,col:'--muted'});
+      /* un reparto de ejemplo */
+      const R=LCG(555+f*13+cj),pos=[];
+      while(pos.length<f){const q=Math.floor(R()*Ntot);if(pos.indexOf(q)<0)pos.push(q);}
+      const bw=Math.min(150,(W-120)/cj),x0=(W-bw*cj)/2;
+      for(let c=0;c<cj;c++){
+        const cnt=pos.filter(q=>Math.floor(q/3)===c).length;
+        ctx.fillStyle=cnt===1?alpha(C('--accent2'),.25):C('--panel');
+        RR(ctx,x0+c*bw+5,60,bw-10,96,10);ctx.fill();
+        ctx.strokeStyle=cnt===1?C('--accent2'):C('--line');ctx.lineWidth=cnt===1?2:1;ctx.stroke();
+        for(let s=0;s<3;s++){
+          const fru=pos.indexOf(c*3+s)>=0;
+          ctx.fillStyle=fru?C('--warn'):alpha(C('--muted'),.45);
+          ctx.beginPath();ctx.arc(x0+c*bw+bw/2,84+s*32,11,0,7);ctx.fill();
+        }
+        T(ctx,cnt+' fruta'+(cnt===1?'':'s'),x0+c*bw+bw/2,176,{s:12.5,a:'center',col:cnt===1?'--accent2':'--muted'});
+      }
+      bar(ctx,60,236,W-140,28,P,'--accent','P(alguna caja con exactamente 1 fruta)',num(P,5));
+      T(ctx,'Falla sólo si ninguna caja recibe exactamente una fruta: '+bad+' de '+tot+' repartos.',
+        60,312,{s:12.5,col:'--muted'});
+      return {"P":num(P,5),"Repartos":tot,"Desfavorables":bad};
+    }
+  }
+},
+{
+  id:"a2", g:"Adicionales", titulo:"A2. Seis zapatos de ocho pares",
+  tema:"conteo por pares",
+  enunciado:"En un ropero hay $8$ pares de zapatos y se eligen $6$ al azar. (a) ¿Probabilidad de que no haya ningún par completo? (b) ¿De que haya exactamente dos pares completos?",
+  resultado:"(a) $\\dfrac{\\binom86 2^6}{\\binom{16}6}=\\dfrac{32}{143}\\approx0{,}2238$. \u00a0 (b) $\\dfrac{\\binom82\\binom62 2^2}{\\binom{16}6}=\\dfrac{30}{143}\\approx0{,}2098$.",
+  pasos:[
+    {t:"Espacio",h:"Subconjuntos de $6$ zapatos entre los $16$: $\\binom{16}6=8008$."},
+    {t:"Ningún par",h:"Los $6$ zapatos vienen de $6$ pares distintos ($\\binom86$) y de cada uno se elige izquierdo o derecho ($2^6$): $1792$."},
+    {t:"Exactamente dos pares",h:"Elegir los $2$ pares completos ($\\binom82$), y los otros $2$ zapatos de pares distintos entre los $6$ restantes ($\\binom62\\cdot2^2$): $1680$."},
+    {t:"Resultados",h:"$32/143\\approx0{,}224$ y $30/143\\approx0{,}210$, verificados enumerando los $8008$ subconjuntos."},
+    {t:"Interpretación",h:"Casi $4$ de cada $5$ veces se arma al menos un par: es el problema de los cumpleaños con $8$ «días» y $6$ «personas»."}
+  ],
+  sim:{
+    controles:[{id:"pa",label:"Pares en el ropero",min:3,max:15,step:1,val:8},
+               {id:"z",label:"Zapatos elegidos",min:2,max:10,step:1,val:6}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const pa=p.pa,z=Math.min(p.z,2*pa),tot=Cnk(2*pa,z);
+      const vals=[],labs=[];
+      for(let k=0;k<=Math.floor(z/2);k++){
+        const n=Cnk(pa,k)*Cnk(pa-k,z-2*k)*Math.pow(2,z-2*k);
+        vals.push(n/tot);labs.push(''+k);
+      }
+      histo(ctx,W,H,vals,labs,k=>(k===0||k===2)?'--warn':'--accent',
+        'P(exactamente k pares completos)   ·   '+pa+' pares, '+z+' zapatos elegidos');
+      return {"P(ningún par)":num(vals[0],5),"P(dos pares)":num(vals[2]||0,5),"|S|":tot};
+    }
+  }
+},
+{
+  id:"a3", g:"Adicionales", titulo:"A3. Veinticinco pasajeros, cuatro paradas",
+  tema:"ocupación · sobreyecciones",
+  enunciado:"Un autobús deposita $25$ pasajeros en $4$ paradas, cada pasajero elige parada al azar e independientemente. (a) Definir $S$. (b) $P(A)$ con $A=$ «nadie baja en la primera parada». (c) ¿Probabilidad de que en todas las paradas baje al menos uno?",
+  resultado:"(a) $S=\\{1,2,3,4\\}^{25}$. \u00a0 (b) $(3/4)^{25}\\approx 7{,}53\\times10^{-4}$. \u00a0 (c) $\\approx 0{,}99699$.",
+  pasos:[
+    {t:"Espacio",h:"Cada pasajero elige una parada: $S=\\{1,2,3,4\\}^{25}$, con $4^{25}$ resultados equiprobables."},
+    {t:"Inciso (b)",h:"Los $25$ eligen entre las otras $3$: $(3/4)^{25}\\approx0{,}00075$."},
+    {t:"Inciso (c) por inclusión-exclusión",h:"$P=\\frac1{4^{25}}\\sum_j(-1)^j\\binom4j(4-j)^{25}=1-4(3/4)^{25}+6(1/2)^{25}-4(1/4)^{25}$."},
+    {t:"Resultado",h:"$\\approx0{,}99699$: casi seguro que todas las paradas se usan."},
+    {t:"Quién manda en el error",h:"El término $4(3/4)^{25}\\approx0{,}003$ domina; que queden dos paradas vacías es del orden de $10^{-7}$."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Pasajeros",min:1,max:40,step:1,val:25},
+               {id:"k",label:"Paradas",min:2,max:8,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n,k=p.k;
+      let sur=0;for(let j=0;j<=k;j++)sur+=(j%2?-1:1)*Cnk(k,j)*Math.pow((k-j)/k,n);
+      const pa=Math.pow((k-1)/k,n);
+      bar(ctx,60,110,W-140,28,pa*50,'--bad','P(nadie baja en la 1.ª parada)  (escala ×50)',num(pa,6));
+      bar(ctx,60,190,W-140,28,sur,'--accent2','P(todas las paradas se usan)',num(sur,6));
+      /* dibujo de las paradas */
+      const R=LCG(31+n*7+k),c=new Array(k).fill(0);
+      for(let i=0;i<n;i++)c[Math.floor(R()*k)]++;
+      const bw=Math.min(110,(W-140)/k),x0=(W-bw*k)/2;
+      for(let j=0;j<k;j++){
+        const vac=c[j]===0;
+        ctx.fillStyle=vac?alpha(C('--bad'),.28):alpha(C('--accent2'),.2);
+        RR(ctx,x0+j*bw+5,244,bw-10,64,8);ctx.fill();
+        ctx.strokeStyle=vac?C('--bad'):C('--accent2');ctx.lineWidth=1.6;ctx.stroke();
+        T(ctx,'parada '+(j+1),x0+j*bw+bw/2,264,{s:12,a:'center',col:'--muted'});
+        T(ctx,c[j],x0+j*bw+bw/2,296,{s:24,b:1,a:'center',col:vac?'--bad':'--ink'});
+      }
+      T(ctx,'Bajá los pasajeros a 6 y mirá cómo se derrumba la probabilidad de (c).',60,336,{s:12.5,col:'--muted'});
+      return {"P(1.ª vacía)":num(pa,6),"P(todas usadas)":num(sur,6),"|S|":k+'^'+n};
+    }
+  }
+},
+{
+  id:"a4", g:"Adicionales", titulo:"A4. Beethoven, Mozart y Schubert",
+  tema:"principio de multiplicación",
+  enunciado:"(a) Con $9$ sinfonías de Beethoven y $27$ conciertos de Mozart, ¿de cuántas formas se puede pasar primero una sinfonía y luego un concierto? (b) Agregando un cuarteto de Schubert (hay $15$) y una emisión por noche, ¿cuántos años se puede seguir sin repetir programa?",
+  resultado:"(a) $9\\cdot27=243$. \u00a0 (b) $9\\cdot27\\cdot15=3645$ programas $\\Rightarrow 3645/365\\approx 10$ años.",
+  pasos:[
+    {t:"Inciso (a)",h:"Dos elecciones libres: $9\\cdot27=243$."},
+    {t:"Inciso (b)",h:"Un programa es una terna: $9\\cdot27\\cdot15=3645$ combinaciones distintas."},
+    {t:"Pasar a años",h:"A una por noche, $3645/365\\approx9{,}99$: alrededor de $10$ años."},
+    {t:"Interpretación",h:"Tres catálogos modestos generan una década de programación. La combinatoria multiplica, no suma."}
+  ],
+  sim:{
+    controles:[{id:"b",label:"Sinfonías de Beethoven",min:1,max:20,step:1,val:9},
+               {id:"m",label:"Conciertos de Mozart",min:1,max:40,step:1,val:27},
+               {id:"s",label:"Cuartetos de Schubert",min:1,max:30,step:1,val:15}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const dos=p.b*p.m, tres=dos*p.s, anios=tres/365;
+      T(ctx,'Beethoven × Mozart = '+p.b+' × '+p.m+' = '+dos+' programas de dos piezas',60,70,{s:17,b:1});
+      T(ctx,'× Schubert = × '+p.s+' = '+tres.toLocaleString('es-AR')+' programas de tres',60,116,{s:17,b:1,col:'--accent'});
+      T(ctx,'≈ '+num(anios,2)+' años de programación diaria sin repetir',60,162,{s:20,b:1,col:'--accent2'});
+      bar(ctx,60,230,W-140,26,Math.min(1,anios/20),'--accent2','años (escala 0–20)',num(anios,2));
+      T(ctx,'Sumar los catálogos daría '+(p.b+p.m+p.s)+' — multiplicar da '+tres.toLocaleString('es-AR')+'.',
+        60,306,{s:13.5,col:'--warn'});
+      return {"Dos piezas":dos,"Tres piezas":tres,"Años":num(anios,2)};
+    }
+  }
+},
+{
+  id:"a5", g:"Adicionales", titulo:"A5. Tazas y platos de María",
+  tema:"hipergeométrica simétrica",
+  enunciado:"María tiene $8$ tazas de distintos colores y $8$ platos haciendo juego. Elige al azar $4$ platos y $4$ tazas. ¿Probabilidad de armar exactamente dos juegos?",
+  resultado:"$\\dfrac{\\binom42\\binom42}{\\binom84}=\\dfrac{36}{70}=\\dfrac{18}{35}\\approx0{,}51429$.",
+  pasos:[
+    {t:"Traducir a colores",h:"$T$ = colores de las tazas elegidas, $Q$ = de los platos, ambos de tamaño $4$. Los juegos son $|T\\cap Q|$."},
+    {t:"Espacio",h:"$|S|=\\binom84^2=4900$ pares equiprobables."},
+    {t:"Hipergeométrica",h:"Fijado $T$, contar cuántos de sus $4$ colores caen en $Q$: población $8$, $4$ marcados, muestra $4$."},
+    {t:"El caso $k=2$",h:"$\\binom42\\binom42/\\binom84=36/70=18/35\\approx0{,}514$, verificado enumerando los $4900$ pares."},
+    {t:"Simetría",h:"La distribución completa es $\\frac1{70},\\frac{16}{70},\\frac{36}{70},\\frac{16}{70},\\frac1{70}$: simétrica, porque la muestra es exactamente la mitad de la población. Además $E[|T\\cap Q|]=2$."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Colores (n)",min:2,max:16,step:1,val:8},
+               {id:"g",label:"Tazas y platos elegidos",min:1,max:8,step:1,val:4}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const n=p.n,g=Math.min(p.g,n),tot=Cnk(n,g);
+      const vals=[],labs=[];
+      for(let k=0;k<=g;k++){vals.push(Cnk(g,k)*Cnk(n-g,g-k)/tot);labs.push(''+k);}
+      histo(ctx,W,H,vals,labs,k=>k===2?'--warn':'--accent',
+        'P(exactamente k juegos)   ·   '+n+' colores, '+g+' tazas y '+g+' platos');
+      return {"P(k=2)":num(vals[2]||0,5),"E[juegos]":num(g*g/n,3),"|S|":tot*tot};
+    }
+  }
+},
+{
+  id:"a6", g:"Adicionales", titulo:"A6. Cumpleaños por mes con 5 alumnos",
+  tema:"cumpleaños con N = 12",
+  enunciado:"Hay $5$ alumnos rindiendo un parcial. (a) ¿Probabilidad de que al menos dos cumplan años el mismo mes (todos los meses de $30$ días)? (b) ¿Cuántos alumnos como mínimo para que esa probabilidad sea $\\geq 0{,}5$?",
+  resultado:"(a) $1-\\dfrac{12\\cdot11\\cdot10\\cdot9\\cdot8}{12^{5}}=\\dfrac{89}{144}\\approx0{,}61806$. \u00a0 (b) $n_{\\min}=5$.",
+  pasos:[
+    {t:"Por qué «meses de 30 días»",h:"Es la hipótesis que vuelve uniforme la distribución del mes; sin ella los meses tendrían probabilidades distintas."},
+    {t:"Complemento",h:"$P(\\text{todos distintos})=\\frac{12\\cdot11\\cdot10\\cdot9\\cdot8}{12^5}=\\frac{55}{144}$."},
+    {t:"Inciso (a)",h:"$P=1-55/144=89/144\\approx0{,}618$."},
+    {t:"Inciso (b)",h:"$P(4)=0{,}4271$ y $P(5)=0{,}6181$: el mínimo es $n=5$."},
+    {t:"La regla aproximada",h:"$n\\approx1{,}18\\sqrt{N}$ para llegar al $50\\,\\%$: con $N=12$ da $4{,}1$ y con $N=365$ da $22{,}5$, es decir las $23$ personas clásicas."}
+  ],
+  sim:{
+    controles:[{id:"n",label:"Alumnos (n)",min:2,max:20,step:1,val:5},
+               {id:"N",label:"Categorías (meses / días)",min:2,max:60,step:1,val:12}],
+    draw:function(ctx,W,H,p){p=ri(p);
+      const f=x=>{let q=1;const n=Math.round(x);for(let k=0;k<n;k++)q*=(1-k/p.N);return 1-q;};
+      curva(ctx,W,H,f,2,20,p.n,'P(al menos dos en la misma categoría) con N = '+p.N);
+      let nmin=1;while(f(nmin)<0.5&&nmin<200)nmin++;
+      T(ctx,'n mínimo para P ≥ 0,5:  '+nmin+'      regla 1,18·√N = '+num(1.18*Math.sqrt(p.N),1),
+        80,H-16,{s:13.5,col:'--warn'});
+      return {"n":p.n,"P":num(f(p.n),5),"n mínimo":nmin};
+    }
+  }
+}
+];
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Generado a partir del archivo LaTeX de la guía.</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probabilidad y Estadística Matemática — Prácticas interactivas (UNCPBA)</title>
+<meta name="description" content="Prácticas interactivas de Probabilidad y Estadística Matemática, Facultad de Ciencias Exactas, UNCPBA.">
+<style>
+:root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+       --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --line:#dfe3ea; --radius:12px; }
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+         --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --line:#2a3040; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:940px;margin:0 auto;padding:0 20px}
+header{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#fff;
+  padding-block:56px 48px;}
+header .wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+header svg{flex:0 0 92px}
+h1{margin:0 0 6px;font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.25;letter-spacing:-.01em}
+.sub{margin:0;opacity:.93;font-size:1rem}
+main{padding-block:40px 56px}
+.lead{color:var(--muted);max-width:62ch;margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:0 0 40px}
+.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:20px;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
+.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);
+  box-shadow:0 8px 24px rgba(0,0,0,.10);outline:none}
+.num{font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.card h2{margin:6px 0 8px;font-size:1.08rem;line-height:1.35}
+.card p{margin:0 0 14px;color:var(--muted);font-size:.92rem}
+.meta{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.note{background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;
+  padding:18px 20px;margin:0 0 32px}
+.note h3{margin:0 0 8px;font-size:1rem}
+.note p{margin:0;color:var(--muted);font-size:.93rem}
+footer{border-top:1px solid var(--line);padding-block:28px 40px;color:var(--muted);font-size:.88rem}
+footer p{margin:0 0 6px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <svg viewBox="0 0 100 100" width="92" height="92" aria-hidden="true" fill="none">
+      <rect x="6" y="54" width="14" height="34" rx="3" fill="#fff" opacity=".45"/>
+      <rect x="25" y="38" width="14" height="50" rx="3" fill="#fff" opacity=".65"/>
+      <rect x="44" y="22" width="14" height="66" rx="3" fill="#fff" opacity=".85"/>
+      <rect x="63" y="40" width="14" height="48" rx="3" fill="#fff" opacity=".65"/>
+      <rect x="82" y="58" width="12" height="30" rx="3" fill="#fff" opacity=".45"/>
+      <path d="M4 50 Q26 12 50 10 Q74 12 96 50" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>Probabilidad y Estadística Matemática</h1>
+      <p class="sub">Prácticas interactivas · Facultad de Ciencias Exactas, UNCPBA</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <p class="lead">Cada práctica se recorre ejercicio por ejercicio, con la resolución
+  desplegada en pasos y una simulación que responde a los parámetros del problema. Mover un
+  control y ver qué cambia suele explicar más que releer la fórmula.</p>
+
+  <div class="grid">
+
+    <a class="card" href="practicas/practica-1.html">
+      <span class="num">Práctica 1</span>
+      <h2>Experimentos aleatorios, espacio muestral y eventos</h2>
+      <p>Cómo se asocia un espacio muestral a un experimento, y el álgebra de eventos sobre él.</p>
+      <div class="meta">21 ejercicios · con simulación</div>
+    </a>
+
+    <a class="card" href="practicas/practica-2.html">
+      <span class="num">Práctica 2</span>
+      <h2>Cálculos combinatorios y resultados igualmente probables</h2>
+      <p>Conteo con y sin orden, con y sin reposición, y el modelo equiprobable.</p>
+      <div class="meta">14 ejercicios · con simulación</div>
+    </a>
+
+    <a class="card" href="practicas/practica-3.html">
+      <span class="num">Práctica 3</span>
+      <h2>Probabilidad condicional, independencia y Bayes</h2>
+      <p>Condicionar, verificar independencia y dar vuelta la información con Bayes.</p>
+      <div class="meta">19 ejercicios · con simulación</div>
+    </a>
+
+    <a class="card" href="practicas/practica-4.html">
+      <span class="num">Práctica 4</span>
+      <h2>Variables aleatorias discretas, esperanza y varianza</h2>
+      <p>Funciones de probabilidad, distribuciones usuales y sus momentos.</p>
+      <div class="meta">20 ejercicios · con simulación</div>
+    </a>
+
+  </div>
+
+  <div class="note">
+    <h3>Sobre este material</h3>
+    <p>Estas páginas acompañan a las guías de la cátedra; los enunciados son los de las
+    prácticas oficiales. Los alumnos de la cursada encuentran en el campus de la materia los
+    solucionarios completos, las fechas y las entregas. Este sitio queda abierto para consulta
+    y repaso, también después de terminado el cuatrimestre.</p>
+  </div>
+
+</main>
+
+<footer class="wrap">
+  <p>Probabilidad y Estadística Matemática — Facultad de Ciencias Exactas, Universidad Nacional del Centro de la Provincia de Buenos Aires.</p>
+  <p>Cátedra: Pablo A. Lotito y Maximiliano Riddick. Ciclo lectivo 2026.</p>
+</footer>
+
+</body>
+</html>
