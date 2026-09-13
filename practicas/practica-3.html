@@ -77,10 +77,27 @@ canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radi
 footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
 @media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
 </style>
+
+<style>
+#nav .recursos{display:flex;flex-direction:column;gap:6px;margin:14px 0 4px;
+  padding-top:12px;border-top:1px solid var(--line);}
+#nav .recursos a{display:block;padding:7px 10px;border-radius:8px;text-decoration:none;
+  font-size:.85rem;color:var(--accent);background:var(--panel2);
+  border:1px solid transparent;transition:border-color .15s ease, background .15s ease;}
+#nav .recursos a:hover,#nav .recursos a:focus-visible{border-color:var(--accent);outline:none;}
+#nav .recursos a.volver{background:transparent;color:var(--muted);font-size:.8rem;padding-left:0;}
+#nav .recursos a.volver:hover{color:var(--accent);border-color:transparent;}
+@media (max-width:760px){#nav .recursos{flex-direction:row;flex-wrap:wrap;}}
+</style>
 </head>
 <body>
 <div id="layout">
-  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <aside id="nav"><h1>Ejercicios</h1><div class="recursos">
+      <a href="../enunciados/practica-3-enunciado.pdf">Enunciado con respuestas (PDF)</a>
+      <a href="../resumenes/practica-3-resumen.pdf">Resumen de teoría (PDF)</a>
+      <a class="volver" href="../index.html">&larr; Todas las prácticas</a>
+    </div>
+    <div id="navlinks"></div></aside>
   <main id="main"></main>
 </div>
 
