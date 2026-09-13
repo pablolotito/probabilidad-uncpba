@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -6,127 +6,225 @@
 <title>Probabilidad y Estadística Matemática — Prácticas interactivas (UNCPBA)</title>
 <meta name="description" content="Prácticas interactivas de Probabilidad y Estadística Matemática, Facultad de Ciencias Exactas, UNCPBA.">
 <style>
-:root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
-       --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --line:#dfe3ea; --radius:12px; }
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
-         --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --line:#2a3040; }
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-.wrap{max-width:940px;margin:0 auto;padding:0 20px}
-header{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#fff;
-  padding-block:56px 48px;}
-header .wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
-header svg{flex:0 0 92px}
-h1{margin:0 0 6px;font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.25;letter-spacing:-.01em}
-.sub{margin:0;opacity:.93;font-size:1rem}
-main{padding-block:40px 56px}
-.lead{color:var(--muted);max-width:62ch;margin:0 0 32px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:0 0 40px}
-.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--radius);padding:20px;
-  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
-.card:hover,.card:focus-within{transform:translateY(-3px);border-color:var(--accent);
-  box-shadow:0 8px 24px rgba(0,0,0,.10);outline:none}
-.num{font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
-.card h2{margin:6px 0 8px;font-size:1.08rem;line-height:1.35}
-.card h2 a{color:inherit;text-decoration:none}
-.card h2 a:hover,.card h2 a:focus-visible{color:var(--accent);outline:none}
-.card p{margin:0 0 14px;color:var(--muted);font-size:.92rem}
-.meta{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
-.recursos{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.recursos a{font-size:.8rem;text-decoration:none;color:var(--accent);
-  border:1px solid var(--line);border-radius:7px;padding:5px 10px;background:var(--panel2);
-  transition:border-color .15s ease}
-.recursos a:hover,.recursos a:focus-visible{border-color:var(--accent);outline:none}
-.note{background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;
-  padding:18px 20px;margin:0 0 32px}
-.note h3{margin:0 0 8px;font-size:1rem}
-.note p{margin:0;color:var(--muted);font-size:.93rem}
-footer{border-top:1px solid var(--line);padding-block:28px 40px;color:var(--muted);font-size:.88rem}
-footer p{margin:0 0 6px}
-a{color:var(--accent)}
+  :root{
+    color-scheme: light dark;
+    /* fondos y tinta */
+    --bg:#FBFAF8;
+    --surface:#F2EFE8;
+    --ink:#1B1A17;
+    --ink-2:#3A382F;
+    --ink-3:#57544B;
+    --muted:#8A8578;
+    --line:#E3DFD6;
+    --line-strong:#B9B3A6;
+    /* acciones */
+    --accent:#1D4ED8;        /* Enunciados: accion primaria */
+    --accent-hover:#163CA8;
+    --on-accent:#FFFFFF;
+    --accent2:#0F7A45;       /* Soluciones y simulaciones: accion terciaria */
+    --accent2-hover:#0A5C33;
+    --accent2-line:#A8CFB9;
+    /* identidad por practica */
+    --p1:#1D4ED8;
+    --p2:#9A3412;
+    --p3:#0F7A45;
+    --p4:#6D28D9;
+    /* tipografia */
+    --serif: Georgia, "Times New Roman", "Liberation Serif", serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15140F;
+      --surface:#1D1C15;
+      --ink:#EFEBE2;
+      --ink-2:#D6D0C4;
+      --ink-3:#B3ADA0;
+      --muted:#8B8578;
+      --line:#2E2C24;
+      --line-strong:#55524F;
+      --accent:#8AB0FF;
+      --accent-hover:#B2CBFF;
+      --on-accent:#0E1220;
+      --accent2:#7EE0A8;
+      --accent2-hover:#9CEBBD;
+      --accent2-line:#3D6B52;
+      --p1:#8AB0FF;
+      --p2:#E9A178;
+      --p3:#7EE0A8;
+      --p4:#C4A9FF;
+    }
+    /* Las dos marcas institucionales son de tinta oscura y se pierden sobre el fondo
+       oscuro. Van sobre una plaqueta clara: preserva el arte oficial sin alterarlo. */
+    .escudos img{background:#FBFAF8;border-radius:4px;padding:5px}
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink-2);font-family:var(--sans);
+    padding:clamp(20px,4vw,56px) clamp(16px,4vw,40px) 40px;
+    display:flex;justify-content:center;
+  }
+  .wrap{width:100%;max-width:860px;display:flex;flex-direction:column;gap:clamp(28px,4vw,40px)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:var(--accent-hover)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  /* encabezado */
+  header.sitio{display:flex;flex-direction:column;gap:20px;border-bottom:2px solid var(--ink);padding-bottom:clamp(18px,3vw,26px)}
+  .escudos{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .escudos img{flex:0 0 auto;object-fit:contain;width:64px;height:64px}
+  .institucion{display:flex;flex-direction:column;gap:3px;min-width:0;border-left:1px solid var(--line-strong);padding-left:16px}
+  .institucion .fac{font:600 12px/1.4 var(--mono);letter-spacing:.13em;color:var(--muted)}
+  .institucion .uni{font:400 13px/1.4 var(--sans);color:var(--muted)}
+  h1{margin:0;font:400 clamp(28px,5.2vw,44px)/1.12 var(--serif);color:var(--ink);letter-spacing:-.01em;text-wrap:pretty}
+  .subtitulo{margin:0;font:400 clamp(15px,2.2vw,17px)/1.5 var(--sans);color:var(--muted)}
+  .intro{margin:0;max-width:64ch;font:400 clamp(15px,2.4vw,17px)/1.65 var(--sans);color:var(--ink-2);text-wrap:pretty}
+
+  /* listado de practicas */
+  .practicas{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .practica{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:clamp(20px,3vw,28px) 0;border-bottom:1px solid var(--line)}
+  .practica.p1{--c:var(--p1)} .practica.p2{--c:var(--p2)} .practica.p3{--c:var(--p3)} .practica.p4{--c:var(--p4)}
+  .pnum{display:flex;align-items:center;gap:14px}
+  .pnum .num{font:400 clamp(34px,6vw,46px)/1 var(--serif);color:var(--c)}
+  .pnum .rule{display:block;width:28px;height:2px;background:var(--c)}
+  .pnum .kicker{font:600 11px/1 var(--mono);letter-spacing:.14em;color:var(--c)}
+  .pbody{display:flex;flex-direction:column;gap:7px}
+  .pbody h2{margin:0;font:600 clamp(19px,3vw,24px)/1.25 var(--serif);color:var(--ink);text-wrap:pretty}
+  .pbody p{margin:0;max-width:58ch;font:400 clamp(14px,2.2vw,16px)/1.55 var(--sans);color:var(--ink-3);text-wrap:pretty}
+  .pbody .ej{font:500 13px/1 var(--mono);color:var(--muted)}
+
+  /* tres acciones diferenciadas */
+  .acciones{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .acciones a{min-height:44px;display:flex;align-items:center}
+  .act-primaria{font:600 15px/1 var(--sans);color:var(--on-accent);background:var(--accent);padding:14px 20px;border-radius:3px}
+  .act-primaria:hover{background:var(--accent-hover);color:var(--on-accent)}
+  .act-secundaria{font:500 15px/1 var(--sans);color:var(--ink);border:1px solid var(--line-strong);padding:13px 19px;border-radius:3px}
+  .act-secundaria:hover{border-color:var(--ink);color:var(--ink)}
+  .act-terciaria{font:500 15px/1 var(--sans);color:var(--accent2);border-bottom:1px solid var(--accent2-line);padding:12px 2px}
+  .act-terciaria:hover{color:var(--accent2-hover);border-bottom-color:var(--accent2)}
+
+  /* nota y pie */
+  .nota{display:flex;flex-direction:column;gap:8px;background:var(--surface);border-left:3px solid var(--ink);padding:18px 20px;max-width:64ch}
+  .nota h3{margin:0;font:600 15px/1 var(--sans);color:var(--ink)}
+  .nota p{margin:0;font:400 15px/1.6 var(--sans);color:var(--ink-3);text-wrap:pretty}
+  footer.sitio{border-top:1px solid var(--line);padding-top:18px;display:flex;flex-wrap:wrap;gap:4px 20px;font:400 14px/1.5 var(--sans);color:var(--muted)}
+
+  @media (max-width:460px){
+    .institucion{border-left:0;padding-left:0;flex-basis:100%}
+    .acciones{flex-direction:column;align-items:stretch}
+    .acciones .act-primaria,.acciones .act-secundaria{justify-content:center}
+  }
 </style>
 </head>
 <body>
-
-<header>
   <div class="wrap">
-    <svg viewBox="0 0 100 100" width="92" height="92" aria-hidden="true" fill="none">
-      <rect x="6" y="54" width="14" height="34" rx="3" fill="#fff" opacity=".45"/>
-      <rect x="25" y="38" width="14" height="50" rx="3" fill="#fff" opacity=".65"/>
-      <rect x="44" y="22" width="14" height="66" rx="3" fill="#fff" opacity=".85"/>
-      <rect x="63" y="40" width="14" height="48" rx="3" fill="#fff" opacity=".65"/>
-      <rect x="82" y="58" width="12" height="30" rx="3" fill="#fff" opacity=".45"/>
-      <path d="M4 50 Q26 12 50 10 Q74 12 96 50" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-    </svg>
-    <div>
-      <h1>Probabilidad y Estadística Matemática</h1>
-      <p class="sub">Prácticas interactivas · Facultad de Ciencias Exactas, UNCPBA</p>
+
+    <header class="sitio">
+      <div class="escudos">
+        <img class="e-unicen" src="assets/escudo-unicen.png" width="64" height="64"
+             alt="Escudo de la Universidad Nacional del Centro de la Provincia de Buenos Aires">
+        <img class="e-exactas" src="assets/escudo-exactas.png" width="64" height="64"
+             alt="Facultad de Ciencias Exactas, UNICEN">
+        <div class="institucion">
+          <span class="fac">FACULTAD DE CIENCIAS EXACTAS</span>
+          <span class="uni">Universidad Nacional del Centro de la Provincia de Buenos Aires</span>
+        </div>
+      </div>
+      <div>
+        <h1>Probabilidad y Estadística Matemática</h1>
+        <p class="subtitulo">Prácticas interactivas · Licenciatura en Matemática</p>
+      </div>
+    </header>
+
+    <p class="intro">Cada práctica se recorre ejercicio por ejercicio, con la resolución desplegada en pasos y una simulación que responde a los parámetros del problema. Mover un control y ver qué cambia suele explicar más que releer la fórmula.</p>
+
+    <div class="practicas">
+
+      <article class="practica p1">
+        <div class="pnum">
+          <span class="num">1</span>
+          <span class="rule"></span>
+          <span class="kicker">PRÁCTICA 1</span>
+        </div>
+        <div class="pbody">
+          <h2>Experimentos aleatorios, espacio muestral y eventos</h2>
+          <p>Cómo se asocia un espacio muestral a un experimento, y el álgebra de eventos sobre él.</p>
+          <span class="ej">21 ejercicios</span>
+        </div>
+        <div class="acciones">
+          <a class="act-primaria" href="enunciados/practica-1-enunciado.pdf">Enunciados (PDF)</a>
+          <a class="act-secundaria" href="resumenes/practica-1-resumen.pdf">Machete teoría (PDF)</a>
+          <a class="act-terciaria" href="practicas/practica-1.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </article>
+
+      <article class="practica p2">
+        <div class="pnum">
+          <span class="num">2</span>
+          <span class="rule"></span>
+          <span class="kicker">PRÁCTICA 2</span>
+        </div>
+        <div class="pbody">
+          <h2>Cálculos combinatorios y resultados igualmente probables</h2>
+          <p>Conteo con y sin orden, con y sin reposición, y el modelo equiprobable.</p>
+          <span class="ej">14 ejercicios</span>
+        </div>
+        <div class="acciones">
+          <a class="act-primaria" href="enunciados/practica-2-enunciado.pdf">Enunciados (PDF)</a>
+          <a class="act-secundaria" href="resumenes/practica-2-resumen.pdf">Machete teoría (PDF)</a>
+          <a class="act-terciaria" href="practicas/practica-2.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </article>
+
+      <article class="practica p3">
+        <div class="pnum">
+          <span class="num">3</span>
+          <span class="rule"></span>
+          <span class="kicker">PRÁCTICA 3</span>
+        </div>
+        <div class="pbody">
+          <h2>Probabilidad condicional, independencia y Bayes</h2>
+          <p>Condicionar, verificar independencia y dar vuelta la información con Bayes.</p>
+          <span class="ej">19 ejercicios</span>
+        </div>
+        <div class="acciones">
+          <a class="act-primaria" href="enunciados/practica-3-enunciado.pdf">Enunciados (PDF)</a>
+          <a class="act-secundaria" href="resumenes/practica-3-resumen.pdf">Machete teoría (PDF)</a>
+          <a class="act-terciaria" href="practicas/practica-3.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </article>
+
+      <article class="practica p4">
+        <div class="pnum">
+          <span class="num">4</span>
+          <span class="rule"></span>
+          <span class="kicker">PRÁCTICA 4</span>
+        </div>
+        <div class="pbody">
+          <h2>Variables aleatorias discretas, esperanza y varianza</h2>
+          <p>Funciones de probabilidad, distribuciones usuales y sus momentos.</p>
+          <span class="ej">20 ejercicios</span>
+        </div>
+        <div class="acciones">
+          <a class="act-primaria" href="enunciados/practica-4-enunciado.pdf">Enunciados (PDF)</a>
+          <a class="act-secundaria" href="resumenes/practica-4-resumen.pdf">Machete teoría (PDF)</a>
+          <a class="act-terciaria" href="practicas/practica-4.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </article>
     </div>
+
+    <aside class="nota">
+      <h3>Sobre este material</h3>
+      <p>Estas páginas acompañan a las guías de la cátedra; los enunciados son los de las prácticas oficiales. Cada práctica ofrece además su enunciado en PDF con las respuestas al final, y un machete de una carilla con la teoría que hace falta para resolverla. Los solucionarios desarrollados, las fechas y las entregas están en el campus de la materia, para los alumnos de la cursada. Este sitio queda abierto para consulta y repaso, también después de terminado el cuatrimestre.</p>
+    </aside>
+
+    <footer class="sitio">
+      <span>Cátedra: Pablo A. Lotito y Maximiliano Riddick · Ciclo lectivo 2026</span>
+      <span>Facultad de Ciencias Exactas, Universidad Nacional del Centro de la Provincia de Buenos Aires</span>
+    </footer>
   </div>
-</header>
-
-<main class="wrap">
-
-  <p class="lead">Cada práctica se recorre ejercicio por ejercicio, con la resolución
-  desplegada en pasos y una simulación que responde a los parámetros del problema. Mover un
-  control y ver qué cambia suele explicar más que releer la fórmula.</p>
-
-  <div class="grid">
-
-    <div class="card">
-      <span class="num">Práctica 1</span>
-      <h2><a href="practicas/practica-1.html">Experimentos aleatorios, espacio muestral y eventos</a></h2>
-      <p>Cómo se asocia un espacio muestral a un experimento, y el álgebra de eventos sobre él.</p>
-      <div class="meta">21 ejercicios · con simulación</div>
-      <div class="recursos"><a href="enunciados/practica-1-enunciado.pdf">Enunciados</a><a href="resumenes/practica-1-resumen.pdf">Machete teoría</a><a href="practicas/practica-1.html">Soluciones y simulaciones</a></div>
-    </div>
-
-    <div class="card">
-      <span class="num">Práctica 2</span>
-      <h2><a href="practicas/practica-2.html">Cálculos combinatorios y resultados igualmente probables</a></h2>
-      <p>Conteo con y sin orden, con y sin reposición, y el modelo equiprobable.</p>
-      <div class="meta">14 ejercicios · con simulación</div>
-      <div class="recursos"><a href="enunciados/practica-2-enunciado.pdf">Enunciados</a><a href="resumenes/practica-2-resumen.pdf">Machete teoría</a><a href="practicas/practica-2.html">Soluciones y simulaciones</a></div>
-    </div>
-
-    <div class="card">
-      <span class="num">Práctica 3</span>
-      <h2><a href="practicas/practica-3.html">Probabilidad condicional, independencia y Bayes</a></h2>
-      <p>Condicionar, verificar independencia y dar vuelta la información con Bayes.</p>
-      <div class="meta">19 ejercicios · con simulación</div>
-      <div class="recursos"><a href="enunciados/practica-3-enunciado.pdf">Enunciados</a><a href="resumenes/practica-3-resumen.pdf">Machete teoría</a><a href="practicas/practica-3.html">Soluciones y simulaciones</a></div>
-    </div>
-
-    <div class="card">
-      <span class="num">Práctica 4</span>
-      <h2><a href="practicas/practica-4.html">Variables aleatorias discretas, esperanza y varianza</a></h2>
-      <p>Funciones de probabilidad, distribuciones usuales y sus momentos.</p>
-      <div class="meta">20 ejercicios · con simulación</div>
-      <div class="recursos"><a href="enunciados/practica-4-enunciado.pdf">Enunciados</a><a href="resumenes/practica-4-resumen.pdf">Machete teoría</a><a href="practicas/practica-4.html">Soluciones y simulaciones</a></div>
-    </div>
-
-  </div>
-
-  <div class="note">
-    <h3>Sobre este material</h3>
-    <p>Estas páginas acompañan a las guías de la cátedra; los enunciados son los de las
-    prácticas oficiales. Cada práctica ofrece además su enunciado en PDF con las respuestas al
-    final, y un resumen de una carilla con la teoría que hace falta para resolverla. Los
-    solucionarios desarrollados, las fechas y las entregas están en el campus de la materia,
-    para los alumnos de la cursada. Este sitio queda abierto para consulta y repaso, también
-    después de terminado el cuatrimestre.</p>
-  </div>
-
-</main>
-
-<footer class="wrap">
-  <p>Probabilidad y Estadística Matemática — Facultad de Ciencias Exactas, Universidad Nacional del Centro de la Provincia de Buenos Aires.</p>
-  <p>Cátedra: Pablo A. Lotito y Maximiliano Riddick. Ciclo lectivo 2026.</p>
-</footer>
-
 </body>
 </html>
