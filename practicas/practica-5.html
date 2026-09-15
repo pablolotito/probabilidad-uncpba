@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 5 — Poisson y aproximación de Poisson a la binomial</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════ HELPERS PROPIOS DE ESTA GUÍA ══════ */
+function combi(n,k){ if(k<0||k>n) return 0; let r=1; for(let i=1;i<=k;i++) r=r*(n-k+i)/i; return r; }
+function pois(k,lam){ let r=Math.exp(-lam); for(let i=1;i<=k;i++) r*=lam/i; return r; }
+function poisAcum(k,lam){ let s=0; for(let j=0;j<=k;j++) s+=pois(j,lam); return s; }
+function binom(k,n,p){ return combi(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k); }
+
+/* Histograma. series = [{p:[...], col:'--accent', lab:'...'}] */
+function hist(ctx,W,H,labels,series,titulo,marca){
+  const padL=54, padR=24, top=44, bot=52;
+  const n=labels.length, gw=(W-padL-padR)/n;
+  let mx=0; series.forEach(s=>s.p.forEach(v=>{ if(v>mx) mx=v; }));
+  mx=Math.max(mx,1e-12);
+  const y0=H-bot, hh=y0-top;
+  ctx.strokeStyle=C('--line'); ctx.lineWidth=1;
+  for(let g=0; g<=4; g++){
+    const y=y0-hh*g/4;
+    ctx.strokeStyle=alpha(C('--line'),.8); ctx.beginPath();
+    ctx.moveTo(padL,y+.5); ctx.lineTo(W-padR,y+.5); ctx.stroke();
+    T(ctx,(mx*g/4).toFixed(3),padL-8,y+4,{s:10.5,a:'right',col:'--muted'});
+  }
+  T(ctx,titulo||'',padL-40,22,{s:12.5,col:'--muted'});
+  const k=series.length, bw=gw/(k+0.6);
+  labels.forEach((L,i)=>{
+    series.forEach((s,j)=>{
+      const v=s.p[i]||0, h=hh*v/mx;
+      const x=padL+i*gw+gw*0.12+j*bw;
+      const on = marca ? marca(i) : false;
+      ctx.fillStyle=alpha(C(on&&j===0?'--warn':s.col),.92);
+      RR(ctx,x,y0-h,bw*0.86,Math.max(1,h),3); ctx.fill();
+      if(v>0.0009 && n<=16) T(ctx,v.toFixed(3),x+bw*0.43,y0-h-5,{s:10,a:'center',col:'--muted'});
+    });
+    if(n<=26) T(ctx,L,padL+i*gw+gw/2,y0+17,{s:12.5,a:'center',col:(marca&&marca(i))?'--warn':'--ink'});
+  });
+  let lx=padL;
+  series.forEach(s=>{ if(!s.lab) return;
+    ctx.fillStyle=C(s.col); RR(ctx,lx,H-20,12,12,3); ctx.fill();
+    T(ctx,s.lab,lx+17,H-10,{s:11.5,col:'--muted'}); lx+=ctx.measureText(s.lab).width+58; });
+}
+
+/* Curva y = f(x) sobre [0,xmax] con línea horizontal de objetivo y marcas */
+function curva(ctx,W,H,f,xmax,titulo,obj,marcas){
+  const padL=62, y0=H-56, hh=y0-52, wd=W-padL-30, N=240;
+  ctx.strokeStyle=C('--line'); ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(padL,y0); ctx.lineTo(padL+wd,y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(padL,y0); ctx.lineTo(padL,y0-hh); ctx.stroke();
+  if(obj!==undefined){
+    ctx.setLineDash([5,4]); ctx.strokeStyle=C('--warn'); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(padL,y0-hh*obj); ctx.lineTo(padL+wd,y0-hh*obj); ctx.stroke();
+    ctx.setLineDash([]);
+    T(ctx,(100*obj).toFixed(0)+'%',padL+4,y0-hh*obj-6,{s:11.5,col:'--warn'});
+  }
+  ctx.strokeStyle=C('--accent'); ctx.lineWidth=2.2; ctx.beginPath();
+  for(let i=0;i<=N;i++){ const x=xmax*i/N, v=Math.max(0,Math.min(1,f(x)));
+    const X=padL+wd*i/N, Y=y0-hh*v; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }
+  ctx.stroke();
+  (marcas||[]).forEach(m=>{
+    if(m.x>xmax) return;
+    const v=Math.max(0,Math.min(1,f(m.x))), X=padL+wd*m.x/xmax, Y=y0-hh*v;
+    ctx.fillStyle=C(m.col||'--bad'); ctx.beginPath(); ctx.arc(X,Y,5,0,7); ctx.fill();
+    T(ctx,m.lab,X,Y-12,{s:12,b:1,a:'center',col:m.col||'--bad'});
+  });
+  T(ctx,titulo,padL-40,30,{s:12.5,col:'--muted'});
+  T(ctx,'0',padL-10,y0+4,{s:11,a:'right',col:'--muted'});
+  T(ctx,'1',padL-10,y0-hh+4,{s:11,a:'right',col:'--muted'});
+  T(ctx,String(xmax),padL+wd,y0+18,{s:11,a:'right',col:'--muted'});
+}
+
+function duelo(ctx,W,H,a,b){
+  const m=Math.max(a.v,b.v)||1;
+  bar(ctx,70,110,W-160,30,a.v/m,a.col||'--accent',a.lab,a.txt);
+  bar(ctx,70,210,W-160,30,b.v/m,b.col||'--accent2',b.lab,b.txt);
+}
+
+const EJERCICIOS = [
+
+/* ─────────────── BLOQUE 1 ─────────────── */
+{
+  id:"ej1", g:"La Poisson por dentro (1–3)", titulo:"1. ¿Dónde está el máximo de la Poisson?",
+  tema:"moda · cociente de términos consecutivos",
+  enunciado:"Sea $X$ una v.a. con distribución de Poisson con parámetro $\\lambda$. Hallar el valor de $k$ para el cual $P(X=k)$ es máxima.",
+  resultado:"$k^{*}=\\lfloor\\lambda\\rfloor$ si $\\lambda\\notin\\mathbb{Z}$; si $\\lambda\\in\\mathbb{Z}$ hay dos modas, $k^{*}=\\lambda-1$ y $k^{*}=\\lambda$.",
+  pasos:[
+    {t:"El soporte es infinito", h:"No se pueden comparar todos los términos entre sí. La técnica para soportes $\\mathbb{N}_0$ es mirar el cociente de términos consecutivos."},
+    {t:"El cociente", h:"$\\dfrac{P(X=k)}{P(X=k-1)}=\\dfrac{e^{-\\lambda}\\lambda^{k}/k!}{e^{-\\lambda}\\lambda^{k-1}/(k-1)!}=\\dfrac{\\lambda}{k}$. Todo lo demás se cancela."},
+    {t:"Leer el cociente", h:"Es mayor que 1 cuando $k<\\lambda$ y menor que 1 cuando $k>\\lambda$: la sucesión sube y después baja, con el máximo en el cruce."},
+    {t:"El caso entero", h:"Si $\\lambda$ es entero, en $k=\\lambda$ el cociente vale exactamente 1: $P(\\lambda-1)=P(\\lambda)$ y hay dos modas."},
+    {t:"Lo que sorprende", h:"$E(X)=\\lambda$, pero el valor más probable es $\\lfloor\\lambda\\rfloor$: la media casi nunca es la moda. La Poisson es asimétrica a derecha."}
+  ],
+  sim:{
+    controles:[ {id:"lam", label:"λ (×10)", min:1, max:120, step:1, val:25} ],
+    draw:function(ctx,W,H,p){
+      const lam=p.lam/10, K=Math.min(24,Math.ceil(lam+4*Math.sqrt(lam)+4));
+      const labs=[], ps=[];
+      for(let k=0;k<=K;k++){ labs.push(String(k)); ps.push(pois(k,lam)); }
+      const mx=Math.max.apply(null,ps);
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(X = k)'}],
+           'Función de probabilidad de Poisson(λ = '+lam.toFixed(1).replace('.',',')+')',
+           i=>Math.abs(ps[i]-mx)<1e-12);
+      const modas=labs.filter((_,i)=>Math.abs(ps[i]-mx)<1e-12).join(' y ');
+      return {"λ":lam.toFixed(1), "Moda (naranja)":modas, "⌊λ⌋":Math.floor(lam), "E(X) = λ":lam.toFixed(1)};
+    }
+  }
+},
+{
+  id:"ej2", g:"La Poisson por dentro (1–3)", titulo:"2. Los buques y la capacidad del puerto",
+  tema:"cola de la Poisson · dimensionamiento",
+  enunciado:"El número de buques tanque que llegan cada día a cierta refinería tiene distribución de Poisson con parámetro $2$. Las actuales instalaciones portuarias pueden despachar $3$ buques por día; los que están en exceso deben enviarse a otro puerto. (a) ¿Cuál es la probabilidad de que en un día haya exceso? (b) ¿En cuánto deben aumentarse las instalaciones para que la probabilidad de atender a todos sea mayor al $90\\%$? (c) ¿Cuál es el número más probable de buques que llegan diariamente?",
+  resultado:"(a) $1-\\tfrac{19}{3}e^{-2}\\approx 0{,}142877$. &nbsp; (b) Aumentar en un buque, de 3 a 4: $P(X\\le 4)\\approx 0{,}947$. &nbsp; (c) $1$ y $2$, ambos con probabilidad $2e^{-2}\\approx 0{,}2707$.",
+  pasos:[
+    {t:"Por complemento", h:"$P(X>3)=1-P(X\\le 3)$: cuatro términos en vez de infinitos."},
+    {t:"La cuenta", h:"$P(X\\le 3)=e^{-2}\\left(1+2+2+\\tfrac43\\right)=\\tfrac{19}{3}e^{-2}=0{,}857123$, así que hay exceso el $14{,}3\\%$ de los días."},
+    {t:"Dimensionar", h:"Con capacidad 4 la acumulada llega a $0{,}947$, por encima del 90% pedido. Una sola amarra más alcanza."},
+    {t:"La moda", h:"$\\lambda=2$ es entero, así que por el ejercicio 1 hay empate entre $k=1$ y $k=2$."},
+    {t:"Lo que se lleva el ingeniero", h:"Pasar de 3 a 4 baja el rechazo del 14,3% al 5,3%: la cola de la Poisson cae muy rápido, y por eso la última unidad de capacidad rinde tanto."}
+  ],
+  sim:{
+    controles:[
+      {id:"lam", label:"Llegadas por día (λ ×10)", min:5, max:90, step:1, val:20},
+      {id:"c", label:"Capacidad del puerto", min:0, max:12, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const lam=p.lam/10, c=p.c, K=Math.min(18,Math.ceil(lam+4*Math.sqrt(lam)+3));
+      const labs=[], ps=[];
+      for(let k=0;k<=K;k++){ labs.push(String(k)); ps.push(pois(k,lam)); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(X = k)'}],
+           'Buques que llegan en un día (λ = '+lam.toFixed(1).replace('.',',')+'); en naranja, los que no se despachan',
+           i=>i>c);
+      const at=poisAcum(c,lam);
+      T(ctx,'P(atender a todos) = '+at.toFixed(4).replace('.',',')+(at>0.9?'  ✓ supera el 90%':'  ✗ no alcanza el 90%'),
+        W/2,H-30,{s:14,b:1,a:'center',col:at>0.9?'--accent2':'--bad'});
+      let cmin=0; while(poisAcum(cmin,lam)<=0.9 && cmin<40) cmin++;
+      return {"P(exceso)":(1-at).toFixed(5), "P(atender a todos)":at.toFixed(5), "Capacidad mínima para 90%":cmin};
+    }
+  }
+},
+{
+  id:"ej3", g:"La Poisson por dentro (1–3)", titulo:"3. Cortes y quemaduras: se suman los parámetros",
+  tema:"aditividad de la Poisson",
+  enunciado:"El número de accidentes producidos por corte o quemaduras en una fábrica en un día de trabajo son v.a. con distribución de Poisson de parámetro $\\lambda_{1}=0{,}16$ y $\\lambda_{2}=0{,}14$. Hallar, suponiendo independencia, la probabilidad de que en un día de trabajo ocurran más de $2$ accidentes.",
+  resultado:"$S=X_1+X_2\\sim\\mathrm{Poi}(0{,}30)$ y $P(S>2)=1-1{,}345\\,e^{-0{,}3}\\approx 0{,}003600$.",
+  pasos:[
+    {t:"La propiedad aditiva", h:"Si $X_1\\sim\\mathrm{Poi}(\\lambda_1)$ y $X_2\\sim\\mathrm{Poi}(\\lambda_2)$ son independientes, entonces $X_1+X_2\\sim\\mathrm{Poi}(\\lambda_1+\\lambda_2)$."},
+    {t:"Se suman los λ", h:"$\\lambda=0{,}16+0{,}14=0{,}30$. Lo que se suma son los parámetros, no las probabilidades."},
+    {t:"La independencia no es gratis", h:"Sin ella la propiedad es falsa, y el enunciado la da explícitamente como supuesto."},
+    {t:"Complemento", h:"$P(S>2)=1-e^{-0{,}3}\\left(1+0{,}3+0{,}045\\right)=1-1{,}345\\,e^{-0{,}3}=0{,}0036$."},
+    {t:"Por qué importa", h:"El camino directo sería convolucionar las dos distribuciones. La aditividad convierte eso en una suma de tres términos."}
+  ],
+  sim:{
+    controles:[
+      {id:"l1", label:"λ₁ cortes (×100)", min:1, max:200, step:1, val:16},
+      {id:"l2", label:"λ₂ quemaduras (×100)", min:1, max:200, step:1, val:14},
+      {id:"m", label:"Umbral: más de m accidentes", min:0, max:8, step:1, val:2}
+    ],
+    draw:function(ctx,W,H,p){
+      const l1=p.l1/100, l2=p.l2/100, L=l1+l2;
+      const K=Math.min(14,Math.ceil(L+4*Math.sqrt(L)+4));
+      const labs=[], a=[], b=[], s=[];
+      for(let k=0;k<=K;k++){ labs.push(String(k)); a.push(pois(k,l1)); b.push(pois(k,l2)); s.push(pois(k,L)); }
+      hist(ctx,W,H,labs,[{p:s,col:'--accent',lab:'suma ~ Poi(λ₁+λ₂)'},{p:a,col:'--accent2',lab:'cortes'},{p:b,col:'--muted',lab:'quemaduras'}],
+           'Accidentes en un día · λ₁+λ₂ = '+L.toFixed(2).replace('.',','), i=>i>p.m);
+      const pr=1-poisAcum(p.m,L);
+      T(ctx,'P(más de '+p.m+' accidentes) = '+pr.toFixed(6).replace('.',','),W/2,H-30,{s:14,b:1,a:'center',col:'--accent2'});
+      const r={}; r["λ de la suma"]=L.toFixed(2); r["P(S > "+p.m+")"]=pr.toFixed(6);
+      r["E(S) = V(S)"]=L.toFixed(2); return r;
+    }
+  }
+},
+
+/* ─────────────── BLOQUE 2 ─────────────── */
+{
+  id:"ej4", g:"Procesos y aproximación (4–7)", titulo:"4. Cinco operadoras, tres minutos",
+  tema:"proceso de Poisson · Poisson dentro de binomial",
+  enunciado:"Una compañía telefónica emplea cinco operadoras de información, independientes una de otra, que reciben solicitudes según un proceso de Poisson con tasa $\\lambda=2$ por minuto. (a) ¿Cuál es la probabilidad de que en un período dado de tres minutos, la primera operadora no reciba solicitudes? (b) ¿Cuál es la probabilidad de que en un período dado de tres minutos, exactamente cuatro de las cinco operadoras no reciban solicitudes?",
+  resultado:"(a) $e^{-6}\\approx 0{,}00247875$. &nbsp; (b) $\\binom{5}{4}\\left(e^{-6}\\right)^{4}\\left(1-e^{-6}\\right)=5\\,e^{-24}\\left(1-e^{-6}\\right)\\approx 1{,}88\\times 10^{-10}$.",
+  pasos:[
+    {t:"Escalar la tasa", h:"En un proceso de Poisson de tasa $\\lambda$, el conteo en un intervalo de longitud $t$ es $\\mathrm{Poi}(\\lambda t)$. Acá: $\\mathrm{Poi}(2\\cdot 3)=\\mathrm{Poi}(6)$, no $\\mathrm{Poi}(2)$."},
+    {t:"Inciso (a)", h:"$P(N_1=0)=e^{-6}=0{,}00248$: una operadora libre tres minutos seguidos ya es raro, 1 en 400."},
+    {t:"Dos modelos en capas", h:"Dentro de cada operadora hay una Poisson; entre operadoras, una binomial. Con $p=e^{-6}$, el número $M$ de operadoras libres es $\\mathrm{Bi}(5,p)$."},
+    {t:"Inciso (b)", h:"$P(M=4)=5\\,p^{4}(1-p)=5e^{-24}(1-e^{-6})\\approx 1{,}9\\times 10^{-10}$."},
+    {t:"El orden de magnitud", h:"Que pase algo raro cuatro veces a la vez es esa rareza elevada a la cuarta. El resultado minúsculo es correcto, no un error de cuenta."}
+  ],
+  sim:{
+    controles:[
+      {id:"tasa", label:"Tasa por minuto (×10)", min:1, max:40, step:1, val:20},
+      {id:"t", label:"Minutos del período", min:1, max:10, step:1, val:3},
+      {id:"op", label:"Operadoras", min:2, max:10, step:1, val:5}
+    ],
+    draw:function(ctx,W,H,p){
+      const lam=(p.tasa/10)*p.t, q=Math.exp(-lam), n=p.op;
+      const labs=[], ps=[];
+      for(let k=0;k<=n;k++){ labs.push(String(k)); ps.push(binom(k,n,q)); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(M = k operadoras sin solicitudes)'}],
+           'λt = '+lam.toFixed(1).replace('.',',')+' por operadora · p = P(sin solicitudes) = '+q.toExponential(3));
+      return {"λt":lam.toFixed(2), "p = e^(−λt)":q.toExponential(4), "P(M = n−1)":binom(n-1,n,q).toExponential(4), "P(M = 0)":binom(0,n,q).toFixed(6)};
+    }
+  }
+},
+{
+  id:"ej5", g:"Procesos y aproximación (4–7)", titulo:"5. 500 cumpleaños en 365 días",
+  tema:"aproximación de Poisson · indicadores dependientes",
+  enunciado:"Una compañía está integrada por $500$ personas. Hallar aproximadamente: (a) La probabilidad de que más de una de ellas cumplan años el $15$ de enero (suponer el año de $365$ días). (b) La esperanza y varianza del número de días que son cumpleaños de al menos una de esas personas. (c) ¿Cuáles son los supuestos necesarios para los cálculos realizados en los incisos anteriores?",
+  resultado:"(a) $\\lambda=500/365$ y $P(X>1)\\approx 1-e^{-\\lambda}(1+\\lambda)\\approx 0{,}3977$. &nbsp; (b) $E(Y)=365(1-e^{-\\lambda})\\approx 272{,}24$; los indicadores <b>no</b> son independientes y $V(Y)\\approx 36{,}90$, no $69{,}19$.",
+  pasos:[
+    {t:"(a) Régimen de Poisson", h:"$X\\sim\\mathrm{Bi}(500,1/365)$ con $n$ grande y $p$ chico: $X\\approx\\mathrm{Poi}(\\lambda)$ con $\\lambda=500/365=1{,}37$."},
+    {t:"(a) El número", h:"$P(X>1)=1-e^{-\\lambda}(1+\\lambda)=0{,}39772$. El valor exacto con la binomial es $0{,}39790$: la aproximación erra en 2 diezmilésimas."},
+    {t:"(b) Indicadores", h:"$Y=\\sum_{d=1}^{365}I_d$ con $I_d=1$ si el día $d$ está ocupado. $P(I_d=1)=1-e^{-\\lambda}=0{,}7459$ y $E(Y)=365\\cdot 0{,}7459=272{,}24$."},
+    {t:"(b) La trampa de la varianza", h:"Los $I_d$ están correlacionados negativamente: las 500 personas se reparten entre los días, así que si muchos están ocupados quedan menos personas para los otros."},
+    {t:"(b) El número correcto", h:"Con covarianzas, $V(Y)=36{,}90$. Tratándolos como independientes daría $365p(1-p)=69{,}19$: casi el doble. La esperanza sobrevive a la aproximación, la varianza no."},
+    {t:"(c) Supuestos", h:"Año de 365 días, cumpleaños uniformes sobre los días e independientes entre personas; y en (a), $n$ grande con $p$ chico."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"Personas", min:50, max:1500, step:50, val:500},
+      {id:"d", label:"Días del año", min:30, max:365, step:5, val:365}
+    ],
+    acciones:[
+      {label:"Simular 3000 años", fn:function(st,paint){
+        const n=st._n||500, d=st._d||365;
+        let s=0,s2=0,m=3000;
+        for(let r=0;r<m;r++){
+          const dias=new Uint8Array(d);
+          for(let i=0;i<n;i++) dias[Math.floor(Math.random()*d)]=1;
+          let y=0; for(let i=0;i<d;i++) y+=dias[i];
+          s+=y; s2+=y*y;
+        }
+        st.mE=s/m; st.mV=s2/m-(s/m)*(s/m); st.mN=(st.mN||0)+m; paint();
+      }},
+      {label:"Reiniciar", fn:function(st,paint){ st.mE=null; st.mV=null; st.mN=0; paint(); }}
+    ],
+    draw:function(ctx,W,H,p,st){
+      const n=p.n, d=p.d; st._n=n; st._d=d;
+      const lam=n/d, q=(d-1)/d;
+      const pe=1-Math.pow(q,n);
+      const p2=1-2*Math.pow(q,n)+Math.pow((d-2)/d,n);
+      const Vex=d*pe*(1-pe)+d*(d-1)*(p2-pe*pe);
+      const Vna=d*pe*(1-pe);
+      T(ctx,'E(Y) = '+(d*pe).toFixed(2).replace('.',',')+' días ocupados de '+d,W/2,34,{s:15,b:1,a:'center'});
+      duelo(ctx,W,H,
+        {v:Vna,lab:'V(Y) si se supone independencia (INCORRECTO)',txt:Vna.toFixed(2).replace('.',','),col:'--bad'},
+        {v:Vex,lab:'V(Y) con las covarianzas (correcto)',txt:Vex.toFixed(2).replace('.',','),col:'--accent2'});
+      T(ctx,'cociente = '+(Vna/Vex).toFixed(2).replace('.',',')+'×',W/2,290,{s:15,b:1,a:'center',col:'--warn'});
+      if(st.mE) T(ctx,'Monte Carlo ('+st.mN+' años): E = '+st.mE.toFixed(2).replace('.',',')+' · V = '+st.mV.toFixed(2).replace('.',','),
+        W/2,325,{s:13.5,a:'center',col:'--muted'});
+      return {"E(Y)":(d*pe).toFixed(3), "V(Y) correcta":Vex.toFixed(3), "V(Y) ingenua":Vna.toFixed(3),
+              "Monte Carlo":(st.mE?st.mE.toFixed(2)+' / '+st.mV.toFixed(2):'—')};
+    }
+  }
+},
+{
+  id:"ej6", g:"Procesos y aproximación (4–7)", titulo:"6. Cuántos tornillos poner en la caja",
+  tema:"binomial vs. Poisson · margen de seguridad",
+  enunciado:"Se producen tornillos con un control de calidad estadístico, de manera que es lícito aplicar el esquema de ensayos de Bernoulli. Si la probabilidad de que un tornillo sea defectuoso es $p=0{,}015$: (a) Hallar la probabilidad de que en una caja de $100$ tornillos no haya ningún defectuoso. (b) ¿Cuántos tornillos debería contener una caja para estar al menos $85\\%$ seguros de que haya por lo menos $100$ tornillos aceptables?",
+  resultado:"(a) $(0{,}985)^{100}\\approx 0{,}2206$ (Poisson: $e^{-1{,}5}\\approx 0{,}2231$). &nbsp; (b) $n=103$ tornillos, con lo que se llega al $93{,}0\\%$.",
+  pasos:[
+    {t:"(a) Binomial exacta", h:"$D\\sim\\mathrm{Bi}(100;0{,}015)$ y $P(D=0)=(0{,}985)^{100}=0{,}2206$."},
+    {t:"(a) Y la aproximación", h:"$\\lambda=np=1{,}5$ da $e^{-1{,}5}=0{,}2231$: dos milésimas de diferencia."},
+    {t:"(b) Traducir la consigna", h:"Con $n$ tornillos hay $n-D$ aceptables. Se pide $P(n-D\\ge 100)\\ge 0{,}85$, o sea $P(D\\le n-100)\\ge 0{,}85$: poner $n-100$ de margen."},
+    {t:"(b) Probar márgenes", h:"$n=101$ da $0{,}552$; $n=102$ da $0{,}802$; $n=103$ da $0{,}930$. El primero que pasa el 85% es $n=103$."},
+    {t:"Lo que se lleva", h:"Tres tornillos de más llevan la confianza del 22% al 93%. Y la exigencia cae lejos del borde, así que binomial y Poisson dan el mismo $n$."}
+  ],
+  sim:{
+    controles:[
+      {id:"pp", label:"Defectuosos (p ×1000)", min:1, max:100, step:1, val:15},
+      {id:"req", label:"Aceptables requeridos", min:20, max:200, step:10, val:100},
+      {id:"conf", label:"Confianza exigida (%)", min:50, max:99, step:1, val:85}
+    ],
+    draw:function(ctx,W,H,p){
+      const pr=p.pp/1000, req=p.req, conf=p.conf/100;
+      const labs=[], bi=[], po=[];
+      let nmin=null;
+      for(let m=0;m<=7;m++){
+        const n=req+m, lam=pr*n;
+        let sb=0; for(let k=0;k<=m;k++) sb+=binom(k,n,pr);
+        const sp=poisAcum(m,lam);
+        labs.push(String(n)); bi.push(sb); po.push(sp);
+        if(nmin===null && sb>=conf) nmin=n;
+      }
+      hist(ctx,W,H,labs,[{p:bi,col:'--accent',lab:'binomial exacta'},{p:po,col:'--accent2',lab:'aproximación de Poisson'}],
+           'P(al menos '+req+' aceptables) según el tamaño n de la caja');
+      T(ctx,nmin!==null?('Con '+nmin+' tornillos se supera el '+p.conf+'%'):('Hacen falta más de '+(req+7)+' tornillos'),
+        W/2,H-30,{s:14,b:1,a:'center',col:nmin!==null?'--accent2':'--bad'});
+      return {"n mínimo":(nmin!==null?nmin:'>'+(req+7)), "Margen":(nmin!==null?nmin-req:'—'), "λ en ese n":(nmin!==null?(pr*nmin).toFixed(3):'—')};
+    }
+  }
+},
+{
+  id:"ej7", g:"Procesos y aproximación (4–7)", titulo:"7. El tipo de sangre raro",
+  tema:"aproximación de Poisson · despeje logarítmico",
+  enunciado:"La probabilidad de tener un tipo de sangre particular es de $1$ en $1000$. (a) Hallar la probabilidad aproximada de que en una ciudad de $10000$ habitantes ninguno tenga este tipo de sangre. (b) ¿Cuánta gente habría que testear, aproximadamente, para tener una probabilidad mayor a $1/2$ de encontrar al menos una persona con este tipo de sangre?",
+  resultado:"(a) $e^{-10}\\approx 4{,}54\\times 10^{-5}$ (exacto: $4{,}52\\times 10^{-5}$). &nbsp; (b) $n>1000\\ln 2=693{,}147$, es decir $n=694$ personas.",
+  pasos:[
+    {t:"(a) Aproximar", h:"$X\\sim\\mathrm{Bi}(10000;0{,}001)$, con $\\lambda=np=10$. Entonces $P(X=0)\\approx e^{-10}=4{,}54\\times 10^{-5}$."},
+    {t:"(b) Complemento", h:"$P(\\text{al menos una})=1-e^{-n/1000}$, y se pide que sea mayor que $1/2$."},
+    {t:"(b) Despejar", h:"$e^{-n/1000}<\\tfrac12 \\iff n>1000\\ln 2=693{,}147$, y como $n$ es entero: $n=694$."},
+    {t:"Lo contraintuitivo", h:"No son 1000 personas ($=1/p$) sino unas 693: el 69% de $1/p$. Es la mediana de una geométrica, bastante menor que su media."},
+    {t:"Nota fina", h:"Con la binomial exacta el umbral cae en $n=693$. La diferencia de una unidad es el precio de aproximar, e irrelevante acá."}
+  ],
+  sim:{
+    controles:[
+      {id:"inv", label:"Rareza: 1 en cada ...", min:100, max:5000, step:100, val:1000},
+      {id:"conf", label:"Probabilidad buscada (%)", min:10, max:99, step:1, val:50}
+    ],
+    draw:function(ctx,W,H,p){
+      const pr=1/p.inv, obj=p.conf/100;
+      const nmin=Math.floor(Math.log(1-obj)/Math.log(1-pr))+1;
+      const nA=Math.ceil(-Math.log(1-obj)/pr);
+      const xmax=Math.ceil(nA*2.2/100)*100;
+      curva(ctx,W,H,x=>1-Math.exp(-x*pr),xmax,
+        'P(al menos un caso) al testear n personas · 1 en '+p.inv, obj,
+        [{x:nA,lab:'n = '+nA,col:'--accent2'},{x:p.inv,lab:'1/p = '+p.inv,col:'--bad'}]);
+      return {"n por Poisson":nA, "n exacto (binomial)":nmin, "1/p":p.inv, "n / (1/p)":(nA/p.inv).toFixed(3)};
+    }
+  }
+},
+
+/* ─────────────── BLOQUE 3 ─────────────── */
+{
+  id:"ej8", g:"Adelgazamiento y condicionamiento (8–10)", titulo:"8. Los huevos que sobreviven",
+  tema:"thinning · demostración",
+  enunciado:"Supongamos que la probabilidad de que un insecto ponga $n$ huevos está dada por la distribución de Poisson con media $\\lambda>0$, y que la probabilidad de que un huevo sobreviva es $p$. Suponiendo independencia, mostrar que la distribución del número de huevos sobrevivientes es Poisson, y hallar su media.",
+  resultado:"$S\\sim\\mathrm{Poi}(\\lambda p)$, con $E(S)=\\lambda p$.",
+  pasos:[
+    {t:"El número de ensayos es aleatorio", h:"$N\\sim\\mathrm{Poi}(\\lambda)$ y, dado $N=n$, los sobrevivientes son $S\\mid N=n\\sim\\mathrm{Bi}(n,p)$."},
+    {t:"Probabilidad total", h:"$P(S=k)=\\sum_{n\\ge k}\\binom{n}{k}p^{k}(1-p)^{n-k}e^{-\\lambda}\\dfrac{\\lambda^{n}}{n!}$. La suma arranca en $n=k$ porque $S\\le N$."},
+    {t:"El truco combinatorio", h:"$\\binom{n}{k}\\dfrac{1}{n!}=\\dfrac{1}{k!\\,(n-k)!}$. Sustituyendo $m=n-k$ queda la serie exponencial $\\sum_m \\frac{[\\lambda(1-p)]^m}{m!}=e^{\\lambda(1-p)}$."},
+    {t:"Cancelar", h:"$P(S=k)=e^{-\\lambda}\\dfrac{(\\lambda p)^{k}}{k!}e^{\\lambda(1-p)}=e^{-\\lambda p}\\dfrac{(\\lambda p)^{k}}{k!}$: es Poisson de parámetro $\\lambda p$."},
+    {t:"Lo que la cuenta agrega", h:"La media sale gratis por esperanza total: $E(S)=E[E(S\\mid N)]=pE(N)=\\lambda p$. Lo que hay que demostrar es que la <i>distribución</i> sigue siendo Poisson."},
+    {t:"Por qué se usa tanto", h:"Es el adelgazamiento: clasificar los eventos de un Poisson con probabilidad $p$ vuelve a dar un Poisson, y las clases resultan <b>independientes</b>. Es lo que hace andar los ejercicios 9 y 10."}
+  ],
+  sim:{
+    controles:[
+      {id:"lam", label:"λ huevos puestos (×10)", min:5, max:120, step:5, val:30},
+      {id:"pp", label:"Prob. de sobrevivir (%)", min:5, max:95, step:5, val:40}
+    ],
+    acciones:[
+      {label:"Simular 20000 insectos", fn:function(st,paint){
+        const lam=st._lam||3, pp=st._p||0.4, m=20000;
+        const c={};
+        for(let r=0;r<m;r++){
+          let L=Math.exp(-lam), k=0, pr=1;
+          while(true){ pr*=Math.random(); if(pr<=L) break; k++; }
+          let s=0; for(let i=0;i<k;i++) if(Math.random()<pp) s++;
+          c[s]=(c[s]||0)+1;
+        }
+        st.mc=c; st.mN=(st.mN||0)+m; paint();
+      }},
+      {label:"Reiniciar", fn:function(st,paint){ st.mc=null; st.mN=0; paint(); }}
+    ],
+    draw:function(ctx,W,H,p,st){
+      const lam=p.lam/10, pp=p.pp/100, L2=lam*pp;
+      st._lam=lam; st._p=pp;
+      const K=Math.min(14,Math.ceil(L2+4*Math.sqrt(L2)+3));
+      const labs=[], teo=[], mc=[];
+      for(let k=0;k<=K;k++){ labs.push(String(k)); teo.push(pois(k,L2));
+        mc.push(st.mc?((st.mc[k]||0)/st.mN):0); }
+      const ser=[{p:teo,col:'--accent',lab:'Poisson(λp) teórica'}];
+      if(st.mc) ser.push({p:mc,col:'--accent2',lab:'simulación ('+st.mN+' insectos)'});
+      hist(ctx,W,H,labs,ser,'Huevos sobrevivientes · λ = '+lam.toFixed(1).replace('.',',')+', p = '+pp.toFixed(2).replace('.',',')+' → λp = '+L2.toFixed(2).replace('.',','));
+      return {"λ":lam.toFixed(1), "p":pp.toFixed(2), "λp = E(S) = V(S)":L2.toFixed(3),
+              "Media simulada":(st.mc?(Object.keys(st.mc).reduce((a,k)=>a+(+k)*st.mc[k],0)/st.mN).toFixed(3):'—')};
+    }
+  }
+},
+{
+  id:"ej9", g:"Adelgazamiento y condicionamiento (8–10)", titulo:"9. Llamadas urgentes: tres formas de condicionar",
+  tema:"condicionamiento uniforme · reparto binomial · independencia",
+  enunciado:"El número de llamadas recibidas en una central entre las 11 y las 12 hs. tiene una tasa de una por minuto, el $5\\%$ son de urgencia y el proceso es de Poisson. (a) ¿Cuál es la probabilidad de recibir a lo sumo dos llamadas de urgencia en los primeros diez minutos, sabiendo que se recibieron $10$ urgencias entre las 11 y las 12? (b) Si se recibieron $10$ llamadas entre las 11 y las 11:15, ¿cuál es la probabilidad de que $5$ sean de urgencia? (c) Si se recibieron $2$ llamadas de urgencia entre las 11 y las 11:15, ¿cuál es la probabilidad de que el total en ese período hubiese sido $10$?",
+  resultado:"(a) $\\mathrm{Bi}(10,\\tfrac16)$: $\\tfrac{1953125}{2519424}\\approx 0{,}775227$. &nbsp; (b) $\\binom{10}{5}(0{,}05)^5(0{,}95)^5\\approx 6{,}09\\times 10^{-5}$. &nbsp; (c) $e^{-14{,}25}\\dfrac{14{,}25^{8}}{8!}\\approx 0{,}027309$.",
+  pasos:[
+    {t:"(a) Condicionar en el tiempo", h:"Dado que hubo 10 urgencias en la hora, esos 10 instantes son uniformes independientes en $[0,60]$. Cada uno cae en los primeros 10 minutos con probabilidad $10/60=1/6$."},
+    {t:"(a) Binomial", h:"$U\\sim\\mathrm{Bi}(10,\\tfrac16)$ y $P(U\\le 2)=0{,}7752$. Notar que la tasa $0{,}05$ no aparece: fijado el total, sólo importa la fracción de tiempo."},
+    {t:"(b) Condicionar entre clases", h:"Dado el total de 10 llamadas, cada una es urgente con probabilidad $0{,}05$: $V\\sim\\mathrm{Bi}(10;0{,}05)$ y $P(V=5)=6{,}09\\times 10^{-5}$. Tampoco interviene la duración."},
+    {t:"(c) Dos procesos independientes", h:"Por adelgazamiento, urgentes $\\sim\\mathrm{Poi}(0{,}75)$ y no urgentes $\\sim\\mathrm{Poi}(14{,}25)$ en 15 minutos, <b>independientes</b>."},
+    {t:"(c) El condicionamiento no hace nada", h:"$P(T=10\\mid A=2)=P(B=8\\mid A=2)=P(B=8)=0{,}0273$: saber cuántas urgencias hubo no informa nada sobre las no urgentes."},
+    {t:"El hilo", h:"Los tres incisos condicionan sobre cosas distintas: tiempo, clase, y el otro subproceso. La misma caja de herramientas resuelve el ejercicio 10."}
+  ],
+  sim:{
+    controles:[
+      {id:"cual", tipo:'select', label:"Inciso", val:0, opts:['(a) reparto en el tiempo','(b) reparto entre clases','(c) los dos subprocesos']},
+      {id:"n", label:"Total condicionado", min:2, max:20, step:1, val:10},
+      {id:"frac", label:"(a) minutos del tramo · (b,c) % urgencia", min:1, max:60, step:1, val:10}
+    ],
+    draw:function(ctx,W,H,p){
+      if(p.cual===0){
+        const q=Math.min(1,p.frac/60), n=p.n, labs=[], ps=[];
+        for(let k=0;k<=n;k++){ labs.push(String(k)); ps.push(binom(k,n,q)); }
+        hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(U = k urgencias en el tramo)'}],
+             'Dado '+n+' urgencias en 60 min, cuántas caen en los primeros '+p.frac+' min · p = '+q.toFixed(4).replace('.',','), i=>i<=2);
+        let s=0; for(let k=0;k<=2;k++) s+=binom(k,n,q);
+        return {"p = tramo/60":q.toFixed(4), "P(U ≤ 2)":s.toFixed(6), "E(U)":(n*q).toFixed(3)};
+      }
+      if(p.cual===1){
+        const q=Math.min(0.95,p.frac/100), n=p.n, labs=[], ps=[];
+        for(let k=0;k<=n;k++){ labs.push(String(k)); ps.push(binom(k,n,q)); }
+        hist(ctx,W,H,labs,[{p:ps,col:'--accent2',lab:'P(V = k urgentes de '+n+')'}],
+             'Dado '+n+' llamadas, cuántas son de urgencia · p = '+q.toFixed(3).replace('.',','), i=>i===5);
+        return {"p urgencia":q.toFixed(3), "P(V = 5)":binom(5,n,q).toExponential(4), "E(V)":(n*q).toFixed(3)};
+      }
+      const pu=Math.min(0.95,p.frac/100), T=15;
+      const lb=(1-pu)*1*T;
+      const labs=[], ps=[]; const K=Math.min(26,Math.ceil(lb+4*Math.sqrt(lb)+3));
+      for(let k=0;k<=K;k++){ labs.push(String(k)); ps.push(pois(k,lb)); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(B = k no urgentes en 15 min)'}],
+           'No urgentes ~ Poi('+lb.toFixed(2).replace('.',',')+'), independientes de las urgentes', i=>i===8);
+      return {"λ no urgentes":lb.toFixed(3), "P(B = 8)":pois(8,lb).toFixed(6), "λ urgentes":(pu*T).toFixed(3)};
+    }
+  }
+},
+{
+  id:"ej10", g:"Adelgazamiento y condicionamiento (8–10)", titulo:"10. Accidentes: tiempo, bloques y clases",
+  tema:"exponencial · incrementos disjuntos · binomial condicionada",
+  enunciado:"Supóngase que el número de accidentes producidos en una fábrica puede considerarse como un proceso de Poisson con una media de $5$ accidentes por semana, y que el $10\\%$ son producidos por corte. (a) ¿Cuál es la probabilidad de que el tiempo entre un accidente y el siguiente sea mayor a $3$ días? (b) A lo largo de $4$ semanas, ¿cuál es la probabilidad de que en una sola semana se produzca algún accidente? (c) Si en una semana hubo $8$ accidentes, ¿cuál es la probabilidad de que más del $30\\%$ de ellos sean por corte?",
+  resultado:"(a) $e^{-15/7}\\approx 0{,}117319$. &nbsp; (b) $4\\left(1-e^{-5}\\right)e^{-15}\\approx 1{,}22\\times 10^{-6}$ (leyendo «exactamente una semana»). &nbsp; (c) $P(C\\ge 3)$ con $C\\sim\\mathrm{Bi}(8;0{,}1)$: $\\approx 0{,}038092$.",
+  pasos:[
+    {t:"(a) Dos caminos, un resultado", h:"O bien $T\\sim\\mathrm{Exp}(5/7)$ en días y $P(T>3)=e^{-15/7}$; o bien $N(3)\\sim\\mathrm{Poi}(15/7)$ y $P(N(3)=0)=e^{-15/7}$. Son la misma cuenta."},
+    {t:"(b) Por bloques", h:"Cada semana tiene algún accidente con probabilidad $p=1-e^{-5}=0{,}9933$, y las semanas son independientes por ser incrementos disjuntos."},
+    {t:"(b) Exactamente una", h:"$W\\sim\\mathrm{Bi}(4,p)$ y $P(W=1)=4p(1-p)^3=1{,}22\\times 10^{-6}$: es rarísimo que tres de las cuatro semanas pasen limpias."},
+    {t:"(b) Ojo con el enunciado", h:"Si se lee «algún accidente en alguna de las cuatro semanas» da $1-e^{-20}\\approx 1$, que es trivial. Adoptamos la lectura que hace del ejercicio un problema."},
+    {t:"(c) Condicionar sobre el total", h:"Fijados los 8 accidentes, cada uno es por corte con probabilidad $0{,}1$: $C\\sim\\mathrm{Bi}(8;0{,}1)$."},
+    {t:"(c) El redondeo", h:"«Más del 30% de 8» es $C>2{,}4$, y como $C$ es entero eso es $C\\ge 3$. $P(C\\ge 3)=1-0{,}9619=0{,}0381$."}
+  ],
+  sim:{
+    controles:[
+      {id:"cual", tipo:'select', label:"Inciso", val:0, opts:['(a) tiempo entre accidentes','(b) semanas con accidentes','(c) accidentes por corte']},
+      {id:"tasa", label:"Accidentes por semana", min:1, max:15, step:1, val:5},
+      {id:"par", label:"(a) días · (b) semanas · (c) total", min:1, max:20, step:1, val:3}
+    ],
+    draw:function(ctx,W,H,p){
+      const lamSem=p.tasa;
+      if(p.cual===0){
+        const lamDia=lamSem/7;
+        curva(ctx,W,H,x=>1-Math.exp(-lamDia*x),14,
+          'P(el próximo accidente llegue antes de t días) · tasa '+lamSem+'/semana', undefined,
+          [{x:p.par,lab:'t = '+p.par+' d',col:'--bad'}]);
+        const r={}; r["λ por día"]=lamDia.toFixed(4);
+        r["P(T > "+p.par+" días)"]=Math.exp(-lamDia*p.par).toFixed(6);
+        r["Tiempo medio entre accidentes"]=(1/lamDia).toFixed(2)+' días'; return r;
+      }
+      if(p.cual===1){
+        const ps=1-Math.exp(-lamSem), n=Math.min(12,p.par), labs=[], pr=[];
+        for(let k=0;k<=n;k++){ labs.push(String(k)); pr.push(binom(k,n,ps)); }
+        hist(ctx,W,H,labs,[{p:pr,col:'--accent',lab:'P(W = k semanas con accidentes)'}],
+             'De '+n+' semanas, cuántas tienen al menos un accidente · p = '+ps.toFixed(6).replace('.',','), i=>i===1);
+        return {"p por semana":ps.toFixed(6), "P(W = 1)":binom(1,n,ps).toExponential(4),
+                "P(W = n)":binom(n,n,ps).toFixed(6)};
+      }
+      const n=Math.min(20,p.par+5), labs=[], pr=[];
+      for(let k=0;k<=n;k++){ labs.push(String(k)); pr.push(binom(k,n,0.1)); }
+      const um=Math.floor(0.3*n)+1;
+      hist(ctx,W,H,labs,[{p:pr,col:'--accent2',lab:'P(C = k por corte, de '+n+')'}],
+           'Dado '+n+' accidentes, cuántos son por corte (10%) · más del 30% es C ≥ '+um, i=>i>=um);
+      let s=0; for(let k=um;k<=n;k++) s+=binom(k,n,0.1);
+      return {"Umbral C ≥":um, "P(más del 30%)":s.toFixed(6), "E(C)":(0.1*n).toFixed(2)};
+    }
+  }
+},
+
+/* ─────────────── ADICIONALES ─────────────── */
+{
+  id:"ad1", g:"Adicionales", titulo:"A1. El concurso de pesca",
+  tema:"esperanza de una función no lineal",
+  enunciado:"En un concurso de pesca cada pescador paga $80$ pesos por participar. La cantidad de peces obtenida por cada pescador sigue un proceso de Poisson con parámetro $\\lambda=0{,}5$. Hay un premio de $40$ pesos por pieza y cada pescador puede cobrar a lo sumo por $6$ piezas. ¿Cuánto dinero espera ganar el participante?",
+  resultado:"$G=40\\min(X,6)-80$ y $E(G)=40\\,E[\\min(X,6)]-80\\approx -60$ pesos: espera <b>perder</b> 60.",
+  pasos:[
+    {t:"Escribir la ganancia", h:"$G=40\\min(X,6)-80$. El tope hace que $G$ no sea función lineal de $X$."},
+    {t:"No se puede reemplazar la media", h:"$E[g(X)]\\ne g(E(X))$ si $g$ no es afín. Hay que calcular $E[\\min(X,6)]$ sumando."},
+    {t:"La cuenta", h:"$E[\\min(X,6)]=E(X)-\\sum_{k\\ge 7}(k-6)P(X=k)$. Con $\\lambda=0{,}5$ la cola pesa $1{,}1\\times 10^{-6}$."},
+    {t:"El resultado", h:"$E[\\min(X,6)]=0{,}4999989\\approx 0{,}5$, así que $E(G)\\approx 40(0{,}5)-80=-60$ pesos."},
+    {t:"El tope es decorativo", h:"Con $\\lambda=0{,}5$ el límite de 6 piezas cuesta cuatro centésimas de peso. Para que pesara haría falta $\\lambda$ del orden de 6: movelo en la simulación y se ve."}
+  ],
+  sim:{
+    controles:[
+      {id:"lam", label:"λ peces por pescador (×10)", min:1, max:120, step:1, val:5},
+      {id:"tope", label:"Tope de piezas cobrables", min:1, max:15, step:1, val:6},
+      {id:"ins", label:"Inscripción ($)", min:0, max:300, step:10, val:80}
+    ],
+    draw:function(ctx,W,H,p){
+      const lam=p.lam/10, tope=p.tope, ins=p.ins;
+      let Emin=0; for(let k=0;k<=80;k++) Emin+=Math.min(k,tope)*pois(k,lam);
+      const G=40*Emin-ins, Gsin=40*lam-ins;
+      const labs=[], ps=[]; const K=Math.min(16,Math.max(tope+3,Math.ceil(lam+4*Math.sqrt(lam)+2)));
+      for(let k=0;k<=K;k++){ labs.push(String(k)); ps.push(pois(k,lam)); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(X = k peces)'}],
+           'Peces por pescador · en naranja, los que no se cobran (tope '+tope+')', i=>i>tope);
+      T(ctx,'Ganancia esperada: $'+G.toFixed(2).replace('.',',')+'   ·   sin tope: $'+Gsin.toFixed(2).replace('.',',')+
+        '   ·   el tope cuesta $'+(Gsin-G).toFixed(2).replace('.',','),
+        W/2,H-28,{s:13.5,b:1,a:'center',col:G<0?'--bad':'--accent2'});
+      return {"E[min(X,tope)]":Emin.toFixed(5), "E(ganancia)":'$'+G.toFixed(2), "Sin tope":'$'+Gsin.toFixed(2),
+              "Costo del tope":'$'+(Gsin-G).toFixed(4)};
+    }
+  }
+},
+{
+  id:"ad2", g:"Adicionales", titulo:"A2. Cuántas veces releer el libro",
+  tema:"tasa que se reduce · despeje logarítmico",
+  enunciado:"La ocurrencia de errores tipográficos en la primera impresión de prueba de un libro se aproxima mediante un proceso de Poisson con una tasa de $1$ error cada $1000$ palabras. Cada lectura de corrección reduce la tasa de error en un $50\\%$ (la tasa, no el número exacto de errores, porque el autor puede introducir nuevos). El libro tiene $200.000$ palabras. ¿Cuántas lecturas hacen falta para que la probabilidad de que no haya más errores sea al menos $0{,}98$?",
+  resultado:"$\\lambda_n=200/2^{n}$ y se pide $e^{-\\lambda_n}\\ge 0{,}98$, de donde $n\\ge 13{,}273$: hacen falta $n=14$ lecturas.",
+  pasos:[
+    {t:"El parámetro inicial", h:"$200.000$ palabras a $1$ error cada $1000$ dan $\\lambda_0=200$ errores esperados."},
+    {t:"Qué se reduce", h:"Lo que se divide por 2 es el parámetro, no el conteo. Por eso después de cada lectura sigue habiendo una Poisson: $\\lambda_n=200/2^{n}$."},
+    {t:"La condición", h:"$P(X_n=0)=e^{-\\lambda_n}\\ge 0{,}98 \\iff \\lambda_n\\le -\\ln 0{,}98=0{,}0202$."},
+    {t:"Despejar", h:"$2^{n}\\ge 200/0{,}0202=9899{,}7$, o sea $n\\ge\\log_2(9899{,}7)=13{,}273$. Redondeando hacia arriba, $n=14$."},
+    {t:"Verificar el borde", h:"Con 13 lecturas: $\\lambda=0{,}0244$ y $P=0{,}9759$, por debajo de lo pedido. Con 14: $\\lambda=0{,}0122$ y $P=0{,}9879$. Truncar habría dado la respuesta mal."}
+  ],
+  sim:{
+    controles:[
+      {id:"pal", label:"Palabras (miles)", min:10, max:500, step:10, val:200},
+      {id:"red", label:"Reducción por lectura (%)", min:10, max:90, step:5, val:50},
+      {id:"conf", label:"Confianza exigida (%)", min:80, max:99, step:1, val:98}
+    ],
+    draw:function(ctx,W,H,p){
+      const lam0=p.pal, f=1-p.red/100, obj=p.conf/100;
+      let nmin=0; while(Math.exp(-lam0*Math.pow(f,nmin))<obj && nmin<200) nmin++;
+      const labs=[], ps=[];
+      const K=Math.min(22,nmin+4);
+      for(let n=0;n<=K;n++){ labs.push(String(n)); ps.push(Math.exp(-lam0*Math.pow(f,n))); }
+      hist(ctx,W,H,labs,[{p:ps,col:'--accent',lab:'P(cero errores) tras n lecturas'}],
+           'λ₀ = '+lam0+' errores · cada lectura deja el '+(100*f).toFixed(0)+'% de la tasa', i=>i>=nmin);
+      T(ctx,'Hacen falta '+nmin+' lecturas para llegar al '+p.conf+'%',W/2,H-30,{s:14,b:1,a:'center',col:'--accent2'});
+      return {"λ₀":lam0, "n mínimo":nmin, "λ final":(lam0*Math.pow(f,nmin)).toFixed(5),
+              "P(cero errores)":Math.exp(-lam0*Math.pow(f,nmin)).toFixed(5)};
+    }
+  }
+}
+
+];
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Probabilidades y Estadística Matemática · Licenciatura en Matemática · FCEx–UNCPBA · Práctica 5</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

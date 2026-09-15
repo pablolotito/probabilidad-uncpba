@@ -29,6 +29,7 @@
     --p2:#9A3412;
     --p3:#0F7A45;
     --p4:#6D28D9;
+    --p5:#B45309;
     /* tipografia */
     --serif: Georgia, "Times New Roman", "Liberation Serif", serif;
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -86,7 +87,7 @@
   /* listado de practicas */
   .practicas{display:flex;flex-direction:column;border-top:1px solid var(--line)}
   .practica{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:clamp(20px,3vw,28px) 0;border-bottom:1px solid var(--line)}
-  .practica.p1{--c:var(--p1)} .practica.p2{--c:var(--p2)} .practica.p3{--c:var(--p3)} .practica.p4{--c:var(--p4)}
+  .practica.p1{--c:var(--p1)} .practica.p2{--c:var(--p2)} .practica.p3{--c:var(--p3)} .practica.p4{--c:var(--p4)} .practica.p5{--c:var(--p5)}
   .pnum{display:flex;align-items:center;gap:14px}
   .pnum .num{font:400 clamp(34px,6vw,46px)/1 var(--serif);color:var(--c)}
   .pnum .rule{display:block;width:28px;height:2px;background:var(--c)}
@@ -214,6 +215,24 @@
           <a class="act-terciaria" href="practicas/practica-4.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
         </div>
       </article>
+
+      <article class="practica p5">
+        <div class="pnum">
+          <span class="num">5</span>
+          <span class="rule"></span>
+          <span class="kicker">PRÁCTICA 5</span>
+        </div>
+        <div class="pbody">
+          <h2>Poisson y aproximación de Poisson a la binomial</h2>
+          <p>Procesos de Poisson en el tiempo, adelgazamiento y el límite de la binomial.</p>
+          <span class="ej">10 ejercicios</span>
+        </div>
+        <div class="acciones">
+          <a class="act-primaria" href="enunciados/practica-5-enunciado.pdf">Enunciados (PDF)</a>
+          <a class="act-secundaria" href="resumenes/practica-5-resumen.pdf">Machete teoría (PDF)</a>
+          <a class="act-terciaria" href="practicas/practica-5.html">Soluciones y simulaciones <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </article>
     </div>
 
     <aside class="nota">
@@ -222,7 +241,7 @@
     </aside>
 
     <footer class="sitio">
-      <span>Cátedra: Pablo A. Lotito y Maximiliano Riddick · Ciclo lectivo 2026</span>
+      <span>Cátedra: Maximiliano Riddick y Pablo A. Lotito · Ciclo lectivo 2026</span>
       <span>Facultad de Ciencias Exactas, Universidad Nacional del Centro de la Provincia de Buenos Aires</span>
     </footer>
   </div>
