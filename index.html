@@ -83,6 +83,13 @@
   h1{margin:0;font:400 clamp(28px,5.2vw,44px)/1.12 var(--serif);color:var(--ink);letter-spacing:-.01em;text-wrap:pretty}
   .subtitulo{margin:0;font:400 clamp(15px,2.2vw,17px)/1.5 var(--sans);color:var(--muted)}
   .intro{margin:0;max-width:64ch;font:400 clamp(15px,2.4vw,17px)/1.65 var(--sans);color:var(--ink-2);text-wrap:pretty}
+  .catedra{margin:10px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font:400 15px/1.5 var(--sans);color:var(--ink-2)}
+  .catedra .rotulo{font:600 12px/1.4 var(--mono);letter-spacing:.13em;color:var(--muted);text-transform:uppercase}
+  .catedra .sep{color:var(--line-strong)}
+  .prog{margin:14px 0 0}
+  .prog a{display:inline-flex;align-items:center;gap:8px;font:400 15px/1.4 var(--sans);color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);padding-bottom:2px}
+  .prog a:hover{color:var(--accent-hover);border-color:var(--accent-hover)}
+  .prog .nota-prog{display:block;margin-top:6px;font:400 13px/1.5 var(--sans);color:var(--muted)}
 
   /* listado de practicas */
   .practicas{display:flex;flex-direction:column;border-top:1px solid var(--line)}
@@ -137,6 +144,15 @@
       <div>
         <h1>Probabilidad y Estadística Matemática</h1>
         <p class="subtitulo">Prácticas interactivas · Licenciatura en Matemática</p>
+        <p class="catedra">
+          <span class="rotulo">Cátedra</span>
+          <span>Dr. Maximiliano Riddick</span>
+          <span><span class="sep" aria-hidden="true">·</span>&nbsp;Dr. Pablo A. Lotito</span>
+        </p>
+        <p class="prog">
+          <a href="programa/programa-2026.pdf">Programa de la materia (PDF)</a>
+          <span class="nota-prog">Contenidos, bibliografía, régimen de cursada y evaluación · Ciclo lectivo 2026</span>
+        </p>
       </div>
     </header>
 
@@ -241,7 +257,7 @@
     </aside>
 
     <footer class="sitio">
-      <span>Cátedra: Maximiliano Riddick y Pablo A. Lotito · Ciclo lectivo 2026</span>
+      <span>Ciclo lectivo 2026</span>
       <span>Facultad de Ciencias Exactas, Universidad Nacional del Centro de la Provincia de Buenos Aires</span>
     </footer>
   </div>
