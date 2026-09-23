@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 7 — Variables aleatorias continuas y vectores aleatorios continuos</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════ HELPERS PROPIOS DE ESTA GUÍA ══════ */
+function combi(n,k){ if(k<0||k>n) return 0; let r=1; for(let i=1;i<=k;i++) r=r*(n-k+i)/i; return r; }
+function binom(k,n,p){ return combi(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k); }
+function fm(v,d){ if(!isFinite(v)) return '—'; return Number(v).toFixed(d===undefined?4:d).replace('.',','); }
+function fr(a,b){ return a+'/'+b; }
+function gauss(R){ let u=0; while(u<1e-12) u=R(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*R()); }
+function linea(ctx,x1,y1,x2,y2,col,lw,dash){ ctx.strokeStyle=C(col||'--line'); ctx.lineWidth=lw||1.2;
+  ctx.setLineDash(dash||[]); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]); }
+function punto(ctx,x,y,r,col){ ctx.fillStyle=C(col||'--accent'); ctx.beginPath(); ctx.arc(x,y,r||3,0,7); ctx.fill(); }
+
+/* Ejes cartesianos. Devuelve el mapeo {X(x),Y(y)} y los bordes. */
+function ejes(ctx,W,H,x0,x1,y0,y1,o){
+  o=o||{}; const L=o.L||58,R=o.R||22,Tp=o.T||36,B=o.B||40;
+  const m={x0,x1,y0,y1,L,R,T:Tp,B,W,H};
+  m.X=x=>L+(x-x0)/(x1-x0)*(W-L-R); m.Y=y=>H-B-(y-y0)/(y1-y0)*(H-Tp-B);
+  linea(ctx,L,H-B,W-R,H-B,'--line',1.2); linea(ctx,L,Tp,L,H-B,'--line',1.2);
+  const nx=o.nx||5, ny=o.ny||4;
+  for(let i=0;i<=nx;i++){ const v=x0+(x1-x0)*i/nx; T(ctx,fm(v,o.dx===undefined?1:o.dx),m.X(v),H-B+16,{s:11,a:'center',col:'--muted'}); }
+  for(let i=0;i<=ny;i++){ const v=y0+(y1-y0)*i/ny; linea(ctx,L,m.Y(v),W-R,m.Y(v),'--line',.5);
+    T(ctx,fm(v,o.dy===undefined?2:o.dy),L-6,m.Y(v)+4,{s:10.5,a:'right',col:'--muted'}); }
+  if(o.tit) T(ctx,o.tit,L,22,{s:12.5,col:'--muted'});
+  if(o.xl) T(ctx,o.xl,W-R,H-B-6,{s:12,a:'right',col:'--muted'});
+  return m;
+}
+function curvaF(ctx,m,f,col,lw,a,b,N){
+  a=(a===undefined)?m.x0:a; b=(b===undefined)?m.x1:b; N=N||300;
+  ctx.strokeStyle=C(col||'--accent'); ctx.lineWidth=lw||2.2; ctx.beginPath(); let on=false;
+  for(let i=0;i<=N;i++){ const x=a+(b-a)*i/N, v=f(x);
+    if(!isFinite(v)){on=false;continue;}
+    const y=Math.max(m.y0,Math.min(m.y1,v)); const X=m.X(x),Y=m.Y(y);
+    if(on) ctx.lineTo(X,Y); else {ctx.moveTo(X,Y); on=true;} }
+  ctx.stroke();
+}
+function sombra(ctx,m,f,a,b,col,al){
+  a=Math.max(a,m.x0); b=Math.min(b,m.x1); if(b<=a) return;
+  ctx.fillStyle=alpha(C(col||'--warn'),al||.35); ctx.beginPath(); ctx.moveTo(m.X(a),m.Y(0));
+  const N=160; for(let i=0;i<=N;i++){ const x=a+(b-a)*i/N; let v=f(x); if(!isFinite(v)) v=m.y1;
+    ctx.lineTo(m.X(x),m.Y(Math.max(m.y0,Math.min(m.y1,v)))); }
+  ctx.lineTo(m.X(b),m.Y(0)); ctx.closePath(); ctx.fill();
+}
+/* Histograma de densidad de una muestra (escala de densidad, para superponer con f). */
+function histo(ctx,m,xs,nb,a,b,col){
+  if(!xs||!xs.length) return; const h=(b-a)/nb, c=new Array(nb).fill(0);
+  xs.forEach(v=>{ const k=Math.floor((v-a)/h); if(k>=0&&k<nb) c[k]++; });
+  ctx.fillStyle=alpha(C(col||'--accent2'),.45);
+  c.forEach((n,k)=>{ const d=n/(xs.length*h); const x=m.X(a+k*h), w=m.X(a+(k+1)*h)-x;
+    const y=m.Y(Math.min(d,m.y1)); ctx.fillRect(x+.5,y,Math.max(1,w-1),m.Y(0)-y); });
+}
+function nube(ctx,m,pts,colf,r){ pts.forEach(p=>{ ctx.fillStyle=colf?colf(p):alpha(C('--accent2'),.5);
+  ctx.fillRect(m.X(p[0])-(r||1.3),m.Y(p[1])-(r||1.3),2*(r||1.3),2*(r||1.3)); }); }
+/* Tabla de una conjunta discreta con marginales. P[i][j]=P(X=xs[j],Y=ys[i]). */
+function tablaConj(ctx,W,H,xs,ys,P,o){
+  o=o||{}; const nr=ys.length, nc=xs.length;
+  const x0=o.x0||80, top=o.top||46, cw=Math.min(o.cw||86,(W-x0-120)/(nc+1)), ch=Math.min(46,(H-top-40)/(nr+1));
+  T(ctx,o.tit||'',x0-60,24,{s:12.5,col:'--muted'});
+  T(ctx,(o.yl||'y')+' \\ '+(o.xl||'x'),x0-8,top-8,{s:12,a:'right',col:'--muted'});
+  let mx=0; P.forEach(r=>r.forEach(v=>{if(v>mx)mx=v;}));
+  xs.forEach((x,j)=>T(ctx,String(x),x0+j*cw+cw/2,top-8,{s:13,b:1,a:'center'}));
+  T(ctx,'p('+(o.yl||'y')+')',x0+nc*cw+cw/2+8,top-8,{s:12,a:'center',col:'--muted'});
+  ys.forEach((y,i)=>{
+    T(ctx,String(y),x0-12,top+i*ch+ch/2+5,{s:13,b:1,a:'right'});
+    let s=0;
+    xs.forEach((x,j)=>{ const v=P[i][j]; s+=v; const hl=o.hl?o.hl(x,y):false;
+      const X=x0+j*cw, Y=top+i*ch;
+      ctx.fillStyle=v>0?alpha(C(hl?'--warn':'--accent'),.12+.55*v/mx):C('--panel2');
+      RR(ctx,X+2,Y+2,cw-4,ch-4,6); ctx.fill();
+      if(hl){ ctx.strokeStyle=C('--warn'); ctx.lineWidth=2; ctx.stroke(); }
+      T(ctx,v>0?(o.lab?o.lab(v):fm(v,3)):'0',X+cw/2,Y+ch/2+(o.emp?0:5),{s:12.5,a:'center',col:v>0?'--ink':'--muted'});
+      if(o.emp) T(ctx,fm(o.emp[i][j],3),X+cw/2,Y+ch/2+15,{s:10.5,a:'center',col:'--accent2'});
+    });
+    T(ctx,o.lab?o.lab(s):fm(s,3),x0+nc*cw+cw/2+8,top+i*ch+ch/2+5,{s:12.5,a:'center',col:'--muted'});
+  });
+  const yb=top+nr*ch;
+  T(ctx,'p('+(o.xl||'x')+')',x0-12,yb+ch/2+5,{s:12,a:'right',col:'--muted'});
+  xs.forEach((x,j)=>{ let s=0; ys.forEach((y,i)=>s+=P[i][j]);
+    T(ctx,o.lab?o.lab(s):fm(s,3),x0+j*cw+cw/2,yb+ch/2+5,{s:12.5,a:'center',col:'--muted'}); });
+  if(o.emp) T(ctx,'en verde: frecuencias simuladas',x0,H-10,{s:11.5,col:'--accent2'});
+  return {x0,top,cw,ch,right:x0+(nc+1)*cw+16};
+}
+/* Barras comparadas: teórica (azul) vs simulada (verde). */
+function barras(ctx,W,H,labs,pt,pe,tit,hl,o){
+  o=o||{}; const L=o.L||56,R=o.R||20,Tp=38,B=46, n=labs.length, gw=(W-L-R)/n;
+  let mx=o.max||0; pt.forEach(v=>{if(v>mx)mx=v;}); if(pe) pe.forEach(v=>{if(v>mx)mx=v;}); mx=mx||1;
+  const y0=H-B, hh=y0-Tp;
+  for(let g=0;g<=4;g++){ const y=y0-hh*g/4; linea(ctx,L,y,W-R,y,'--line',.6); T(ctx,fm(mx*g/4,3),L-6,y+4,{s:10.5,a:'right',col:'--muted'}); }
+  T(ctx,tit||'',L,22,{s:12.5,col:'--muted'});
+  const bw=pe?gw*0.38:gw*0.7;
+  labs.forEach((lb,i)=>{ const x=L+i*gw+gw*0.12, on=hl?hl(i):false;
+    ctx.fillStyle=alpha(C(on?'--warn':'--accent'),.9); const h=hh*pt[i]/mx; RR(ctx,x,y0-h,bw,Math.max(1,h),3); ctx.fill();
+    if(pe){ ctx.fillStyle=alpha(C('--accent2'),.9); const h2=hh*pe[i]/mx; RR(ctx,x+bw+2,y0-h2,bw,Math.max(1,h2),3); ctx.fill(); }
+    if(n<=30) T(ctx,String(lb),L+i*gw+gw/2,y0+16,{s:n>20?10:12,a:'center',col:on?'--warn':'--ink'}); });
+  ctx.fillStyle=C('--accent'); RR(ctx,L,H-18,11,11,3); ctx.fill(); T(ctx,o.lt||'teórica',L+15,H-8,{s:11.5,col:'--muted'});
+  if(pe){ ctx.fillStyle=C('--accent2'); RR(ctx,L+100,H-18,11,11,3); ctx.fill(); T(ctx,o.le||'simulada',L+115,H-8,{s:11.5,col:'--muted'}); }
+}
+function duelo(ctx,W,H,a,b){
+  const m=Math.max(a.v,b.v)||1;
+  bar(ctx,70,110,W-160,30,a.v/m,a.col||'--accent',a.lab,a.txt);
+  bar(ctx,70,210,W-160,30,b.v/m,b.col||'--accent2',b.lab,b.txt);
+}
+
+const ENUN={
+"ej1": "La duración (en meses) de un sistema está dada por una v. a. $X $ con función de densidad:\\[ f\\left( x\\right) =\\left\\{ \\begin{array}{cc} C\\textit{ }xe^{-x/2} & \\textit{si }x>0 \\\\ 0 & cc\\end{array}\\right. \\]<br><b>(a)</b> Determinar el valor de $C.$<br><b>(b)</b> ¿Cuál es la probabilidad de que el sistema dure al menos $5$ meses?<br><b>(c)</b> Hallar la duración esperada del sistema.",
+"ej2": "Sea $X$ una v.a. continua con función de densidad de probabilidad:\\[ f(x)=\\frac{\\lambda }{2}e^{-\\lambda \\left\\vert x\\right\\vert }\\textit{ \\ con }\\lambda >0 \\]Calcular:<br><b>(a)</b> La función de distribución acumulada $F(x)$ y $P(X\\leq 2)$.<br><b>(b)</b> $E(X)$ y $var(X).$",
+"ej3": "Juan llega a la parada del colectivo a las $10$ en punto, sabiendo que el micro llegará en algún momento uniformemente distribuido entre las $10$ y las $10:30$hs.<br><b>(a)</b> ¿cuál es la probabilidad de que deba esperar más de $10$ minutos?<br><b>(b)</b> Si a las $10:15$ el micro aún no ha llegado, ¿cuál es la probabilidad que deba esperar por lo menos $10$ minutos más?",
+"ej4": "Una máquina corta alambres de tal manera que la longitud en metros de cada trozo que corta es una v.a. con distribución uniforme en el intervalo $[0,9m.;1,1m.]$. Con cada trozo de alambre cortado se forma una circunferencia. Hallar la función de densidad del área del círculo correspondiente y su esperanza.",
+"ej5": "Sea $X$ un punto elegido al azar del intervalo $(0,1)$. Calcular la función de densidad del producto de las longitudes de los dos intervalos que determina $X$. Calcular su esperanza.",
+"ej6": "Se escoge al azar un punto interior a un triángulo equilátero de lado $3$. Hallar la probabilidad de que su distancia al vértice más cercano sea mayor que $1$. (Recordar que: si la circunferencia tiene radio $r$ y el sector sombreado $A$ tiene un ángulo de abertura $\\alpha $ entonces el área del sector sombreado es$\\frac{\\pi r^{2}\\alpha }{360}$)",
+"ej7": "Se arroja un dado equilibrado. Si sale menor que $3$ se elige un número al azar en $[0,1]$ y se lo anota en un papel. Si el dado sale mayor o igual que $3$ se eligen (independientemente) dos números al azar de $[0,1]$, se los suma y se escribe el resultado en un papel. Sea $Z$ el número escrito en el papel. Probar que $Z$ es una v.a. continua y:<br><b>(a)</b> Hallar $F_{Z}$, $f_{Z}$ . Calcular $E(Z)$ y $Var(Z)$<br><b>(b)</b> Calcular la probabilidad de que el dado haya salido menor que $3$ sabiendo que $Z>3/4.$",
+"ej8": "Un punto $P$ es elegido aleatoriamente dentro de un círculo de radio $1$.<br><b>(a)</b> ¿Cuál es la probabilidad de que su distancia al centro $O$ sea menor que $d$?<br><b>(b)</b> Sea $X$=“ longitud de la cuerda de la cual $P$ es el punto medio”, mostrar que $P\\left( X>\\sqrt{3}\\right) =1/4$",
+"ej9": "Don Zoilo tiene dos vacas (Aurora y Belinda). La cantidad de leche (en litros) que da Aurora en un día es una variable aleatoria $X$ con distribución exponencial con media $5$ litros. Belinda, en cambio, da $5$ litros el $20\\%$ de las veces y el resto no da nada. Don Zoilo ordeña a Belinda solamente los días en que Aurora da menos de $6$ litros.<br><b>(a)</b> ¿Cuál es la probabilidad de que Don Zoilo obtenga más de $8$ litros en un día?<br><b>(b)</b> Con la leche que obtiene de Aurora, Don Zoilo fabrica manteca. La cantidad de manteca (en kilos) que obtiene con $X$ litros de leche es $W=g(X) $ siendo<br>\\[ g\\left( x\\right) =\\left\\{ \\begin{array}{cc} \\sqrt[3]{x} & si\\textit{ }x\\leq 8 \\\\ \\frac{1}{7}\\left( x-1\\right) ^{2}-5 & si\\textit{ }8<x\\leq 15 \\\\ 2x-7 & 15<x\\end{array}\\right. \\]<br>Hallar la función de densidad de la cantidad de manteca.",
+"ej10": "Sea $X\\sim Un\\left( -1,1\\right) $. Hallar la función de densidad de $Y$, para:<br><b>(a)</b> $Y=X^{2}$<br><b>(b)</b> $Y=\\frac{X}{1+X}$",
+"ej11": "Sean $X,$ $Y$ v. a. continuas con función de densidad conjunta dada por:\\[ f\\left( x,y\\right) =\\left\\{ \\begin{array}{cc} C\\left( 3y+x\\right) & \\textit{si }0\\leq x\\leq y\\leq 1 \\\\ 0 & cc\\end{array}\\right. \\]<br><b>(a)</b> Hallar el valor de $C.$<br><b>(b)</b> Calcular la densidades marginales de $X$ e $Y.$ ¿Son independientes?<br><b>(c)</b> Calcular $P\\left( Y-X\\leq 1/2\\right) $",
+"ej12": "Supongamos que la v. a. bidimensional $\\left( X,Y\\right) $ tiene distribución uniforme en el cuadrado de vértices $\\left( 1,0\\right) , $ $\\left( 0,1\\right) ,$ $\\left( -1,0\\right) $ y $\\left( 0,-1\\right) $<br><b>(a)</b> Hallar las funciones de densidad marginales.<br><b>(b)</b> Calcular la $cov(X,Y)$, ¿son independientes?",
+"ej13": "Sean $X$ e $Y$ variables aleatorias con función de densidad conjunta\\[ f\\left( x,y\\right) =\\left\\{ \\begin{array}{cc} e^{-y} & \\textit{si }0<x\\leq y \\\\ 0 & cc\\end{array}\\right. \\]<br><b>(a)</b> Calcular $P\\left( X>2\\mid Y<4\\right) .$<br><b>(b)</b> ¿Son independientes?",
+"ej14": "Supongamos se elige $X\\sim Un\\left( 0,1\\right) $ y que dado $X=x$ se elige $Y$ con densidad \\[ f_{Y\\mid X}\\left( y,x\\right) =\\left\\{ \\begin{array}{cc} 1/x & \\textit{si }0\\leq y\\leq x \\\\ 0 & cc\\end{array}\\right. \\]<br><b>(a)</b> Calcular $P\\left( 1/4\\leq Y\\leq 1/2\\mid X=1/2\\right) $ y $P\\left( 1/4\\leq Y\\leq 1/2\\right) $<br><b>(b)</b> Hallar $f_{Y}\\left( y\\right) $<br><b>(c)</b> Calcular $P\\left( 1/4\\leq X\\leq 3/4\\mid Y=y\\right) $",
+"ej15": "Sean $X$ e $Y$ con densidad $f(x,y)=8xy$ para $0<y<x<1$. Encontrar $E(X\\mid Y)$ y $E(Y\\mid X)$.",
+"a1": "Se tiene un rectángulo $ABCD$. La base $AB$ mide $2$ y la altura $1 $. Se elige al azar un punto $P$ del interior del rectángulo. Hallar el valor esperado del ángulo formado por $AB$ y $AP$.",
+"a2": "La cantidad de lluvia caída en una región $X$ es una v.a. con función de densidad:\\[ f\\left( x\\right) =\\left\\{ \\begin{array}{cc} 1/8 & si\\textit{ }0\\leq x<4 \\\\ -1/64\\textit{ }x+3/16 & si\\textit{ }4\\leq x\\leq 12 \\\\ 0 & cc\\end{array}\\right. \\]El rendimiento en toneladas de una parcela es una función, que llamaremos $H\\left( X\\right) ,$ de la cantidad de lluvia caída:\\[ H\\left( x\\right) =\\left\\{ \\begin{array}{cc} 3 & si\\textit{ }0\\leq x\\leq 6 \\\\ x^{2}-33 & si\\textit{ }6<x\\leq 10 \\\\ 0 & cc\\end{array}\\right. \\]<br><b>(a)</b> Hallar la función de distribución de la variable rendimiento.<br><b>(b)</b> Calcular la $P\\left( H\\left( X\\right) \\geq 31\\right) $<br><b>(c)</b> ¿Es la v.a. $H\\left( X\\right) $ continua? ¿Es discreta?",
+"a3": "Sean $X$ e $Y$ variables aleatorias independientes con distribución $Un\\left( 0,1\\right) $. Hallar la fdp de:<br><b>(a)</b> $V=X.Y$<br><b>(b)</b> $W=X/Y$<br><b>(c)</b> $Z=m\\acute{a}x\\left\\{ X,Y\\right\\} $",
+"a4": "Sea $(X,Y)$ con densidad:<br>$f_{x,y}(x,y)=c\\left( x+y\\right) \\left[ I_{\\left[ 0,1\\right] }\\left( x\\right) I_{\\left[ 0,1\\right] }\\left( y\\right) +I_{\\left[ 1,2\\right] }\\left( x\\right) I_{\\left[ 0,\\left( x-1\\right) ^{2}+1\\right] }\\left( y\\right) \\right] $<br>Sea $Z=3X+Y$. Hallar $f_{z}$",
+"a5": "La densidad conjunta de $(X,Y)$ es uniforme en $\\{(x,y):\\left\\vert y\\right\\vert \\leq x^{2},0\\leq x\\leq 1\\}$.<br><b>(a)</b> Calcular $cov(X,Y)$.<br><b>(b)</b> Son $X$ e $Y$ independientes?.<br><b>(c)</b> Calcule $P(X+Y>3/4)$."
+};
+
+/* ══════ DATOS DE LA PRÁCTICA 7 ══════ */
+function muestra(N,seed,gen){ const R=LCG(seed), a=[]; for(let i=0;i<N;i++) a.push(gen(R)); return a; }
+function expo(R,media){ let u=0; while(u<1e-12) u=R(); return -media*Math.log(u); }
+function frac(a,f){ let c=0; a.forEach(v=>{ if(f(v)) c++; }); return c/a.length; }
+function marco2(ctx,m,poly,col){ ctx.strokeStyle=C(col||'--accent'); ctx.lineWidth=2; ctx.beginPath();
+  poly.forEach((q,i)=>{ i?ctx.lineTo(m.X(q[0]),m.Y(q[1])):ctx.moveTo(m.X(q[0]),m.Y(q[1])); }); ctx.closePath(); ctx.stroke(); }
+/* ejes con la misma escala en x e y dentro de un recuadro */
+function ejesIso(ctx,W,H,x0,x1,y0,y1,o){ o=o||{}; const Tp=o.T||36,B=o.B||36, hh=H-Tp-B, s=hh/(y1-y0), ww=s*(x1-x0);
+  const L=o.L!==undefined?o.L:(W-ww)/2; return ejes(ctx,L+ww+(o.R||0),H,x0,x1,y0,y1,Object.assign({L:L,R:o.R||0,T:Tp,B:B},o)); }
+const fZ7=z=>z<0||z>2?0:(z<=1?(1+2*z)/3:2*(2-z)/3);
+const gW9=x=>x<=8?Math.cbrt(x):(x<=15?(x-1)*(x-1)/7-5:2*x-7);
+const fW9=w=>w<=0?0:(w<=2?0.6*w*w*Math.exp(-w*w*w/5):(w<=23?7/(10*Math.sqrt(7*(w+5)))*Math.exp(-(1+Math.sqrt(7*(w+5)))/5):Math.exp(-(w+7)/10)/10));
+const fZa4=z=>{ if(z<0||z>8) return 0; if(z<=1) return 40*z*z/723; if(z<=4) return 20*(z+1)/723;
+  const r=Math.sqrt(4*z-7); if(z<=6) return (40*z*z+270*z-270-90*(z+1)*r)/723; return (630*z-990-90*(z+1)*r)/723; };
+
+const EJERCICIOS = [
+/* ─────────────── BLOQUE 1: una variable continua ─────────────── */
+{
+  id:"ej1", g:"Densidades y acumuladas (1–3)", titulo:"1. Duración de un sistema",
+  tema:"constante de normalización · Gamma(2)",
+  enunciado:ENUN.ej1,
+  resultado:"(a) $C=\\tfrac14$. (b) $P(X\\ge5)=\\tfrac72e^{-5/2}\\approx0{,}2873$. (c) $E(X)=4$ meses.",
+  pasos:[
+    {t:"Normalizar", h:"$\\int_0^\\infty xe^{-x/2}dx=\\Gamma(2)\\,2^2=4$ ⇒ $C=\\tfrac14$. (Es una Gamma de forma 2 y escala 2.)"},
+    {t:"La cola, por partes", h:"$\\int_5^\\infty\\tfrac14xe^{-x/2}dx=\\left[-\\tfrac12xe^{-x/2}-e^{-x/2}\\right]_5^\\infty=\\tfrac72e^{-5/2}$."},
+    {t:"Número", h:"$\\approx0{,}2873$: más de un cuarto de los sistemas dura 5 meses o más."},
+    {t:"Esperanza", h:"$E(X)=\\tfrac14\\int_0^\\infty x^2e^{-x/2}dx=\\tfrac14\\Gamma(3)2^3=4$. La moda está en $x=2$: la densidad es asimétrica a derecha."}
+  ],
+  sim:{
+    controles:[ {id:"t", label:"Umbral t (meses, ×10)", min:0, max:200, step:1, val:50} ],
+    draw:function(ctx,W,H,p){
+      const t=p.t/10, f=x=>x<0?0:x*Math.exp(-x/2)/4, cola=(1+t/2)*Math.exp(-t/2);
+      const m=ejes(ctx,W,H,0,20,0,0.2,{nx:10,ny:4,dx:0,dy:2,tit:'f(x) = x e^{−x/2}/4; en naranja P(X ≥ t)'});
+      sombra(ctx,m,f,t,20,'--warn',.45); curvaF(ctx,m,f,'--accent',2.4);
+      linea(ctx,m.X(4),m.Y(0),m.X(4),m.Y(f(4)),'--accent2',2,[5,4]); T(ctx,'E(X) = 4',m.X(4)+6,m.Y(f(4))-8,{s:12,col:'--accent2',b:1});
+      return {"t":fm(t,1),"P(X ≥ t)":fm(cola,4),"P(X ≥ 5)":"0,2873"};
+    }
+  }
+},
+{
+  id:"ej2", g:"Densidades y acumuladas (1–3)", titulo:"2. La densidad de Laplace",
+  tema:"acumulada por tramos · simetría",
+  enunciado:ENUN.ej2,
+  resultado:"(a) $F(x)=\\tfrac12e^{\\lambda x}$ si $x<0$, $F(x)=1-\\tfrac12e^{-\\lambda x}$ si $x\\ge0$; $P(X\\le2)=1-\\tfrac12e^{-2\\lambda}$. (b) $E(X)=0$, $var(X)=\\dfrac2{\\lambda^2}$.",
+  pasos:[
+    {t:"Dos tramos", h:"El $|x|$ obliga a separar $x<0$ y $x\\ge0$."},
+    {t:"x < 0", h:"$F(x)=\\int_{-\\infty}^x\\tfrac\\lambda2e^{\\lambda t}dt=\\tfrac12e^{\\lambda x}$; en $0$ vale $\\tfrac12$, por simetría."},
+    {t:"x ≥ 0", h:"$F(x)=\\tfrac12+\\int_0^x\\tfrac\\lambda2e^{-\\lambda t}dt=1-\\tfrac12e^{-\\lambda x}$. En particular $P(X\\le2)=1-\\tfrac12e^{-2\\lambda}$."},
+    {t:"Momentos", h:"$E(X)=0$ por simetría; $E(X^2)=E(|X|^2)$ con $|X|\\sim$ Exp$(\\lambda)$: $\\tfrac1{\\lambda^2}+\\tfrac1{\\lambda^2}=\\tfrac2{\\lambda^2}$."}
+  ],
+  sim:{
+    controles:[ {id:"l", label:"λ (×10)", min:3, max:40, step:1, val:10}, {id:"x", label:"x (×10)", min:-40, max:40, step:1, val:20} ],
+    draw:function(ctx,W,H,p){
+      const l=p.l/10, x=p.x/10, f=t=>l/2*Math.exp(-l*Math.abs(t)), F=t=>t<0?Math.exp(l*t)/2:1-Math.exp(-l*t)/2;
+      const m=ejes(ctx,W*0.55,H,-5,5,0,Math.max(0.6,l/2*1.1),{nx:10,ny:4,dx:0,dy:2,tit:'Densidad; en naranja F(x) = P(X ≤ x)'});
+      sombra(ctx,m,f,-5,x,'--warn',.45); curvaF(ctx,m,f,'--accent',2.4);
+      const m2=ejes(ctx,W,H,-5,5,0,1,{L:W*0.62,nx:5,ny:4,dx:0,dy:2,tit:'Acumulada F'});
+      curvaF(ctx,m2,F,'--accent',2.4); punto(ctx,m2.X(x),m2.Y(F(x)),6,'--warn');
+      return {"F(x)":fm(F(x),4),"P(X ≤ 2)":fm(F(2),4),"var(X) = 2/λ²":fm(2/(l*l),3)};
+    }
+  }
+},
+{
+  id:"ej3", g:"Densidades y acumuladas (1–3)", titulo:"3. Esperando el colectivo",
+  tema:"uniforme condicional · la uniforme sí tiene memoria",
+  enunciado:ENUN.ej3,
+  resultado:"(a) $\\tfrac23$. (b) $P(T\\ge25\\mid T>15)=\\tfrac13$.",
+  pasos:[
+    {t:"Modelo", h:"$T\\sim Un(0,30)$ minutos después de las 10."},
+    {t:"(a)", h:"$P(T>10)=\\tfrac{20}{30}=\\tfrac23$."},
+    {t:"(b) condicionar", h:"$P(T\\ge25\\mid T>15)=\\dfrac{5/30}{15/30}=\\tfrac13$: dado $T>15$, $T$ es uniforme en $(15,30)$."},
+    {t:"Lo que sorprende", h:"Esperar 15 minutos baja de $\\tfrac23$ a $\\tfrac13$ la chance de esperar 10 más. Con una exponencial no cambiaría (falta de memoria)."}
+  ],
+  sim:{
+    controles:[ {id:"s", label:"Ya esperé s minutos", min:0, max:19, step:1, val:15}, {id:"w", label:"Quiero saber si espero w más", min:1, max:10, step:1, val:10},
+                {id:"d", tipo:"select", label:"Llegada del micro", opts:["Uniforme(0, 30)","Exponencial de media 15"], val:0} ],
+    draw:function(ctx,W,H,p){
+      const s=p.s, w=Math.min(p.w,30-s), uni=p.d===0;
+      const S=t=>uni?Math.max(0,1-t/30):Math.exp(-t/15);
+      const cond=S(s+w)/S(s), sin=S(w);
+      duelo(ctx,W,H,{v:cond,lab:'P(T ≥ s + w | T > s)  (habiendo esperado '+s+' min)',txt:fm(cond,4)},{v:sin,lab:'P(T ≥ w)  (recién llegado)',txt:fm(sin,4)});
+      T(ctx,uni?'Uniforme: la espera restante se acorta (condicionada a T > s, T es uniforme en (s, 30)).':'Exponencial: las dos barras son iguales. No tiene memoria.',70,300,{s:13.5,col:uni?'--warn':'--accent2',b:1});
+      return {"condicional":fm(cond,4),"sin condicionar":fm(sin,4)};
+    }
+  }
+},
+/* ─────────────── BLOQUE 2: funciones de una v.a. ─────────────── */
+{
+  id:"ej4", g:"Funciones de una v.a. (4–5, 9–10)", titulo:"4. Alambres y círculos",
+  tema:"cambio de variable monótono",
+  enunciado:ENUN.ej4,
+  resultado:"$A=\\dfrac{L^2}{4\\pi}$, $f_A(a)=5\\sqrt{\\pi/a}$ para $\\tfrac{0{,}81}{4\\pi}\\le a\\le\\tfrac{1{,}21}{4\\pi}$; $E(A)=\\dfrac{301}{1200\\pi}\\approx0{,}0798$ m².",
+  pasos:[
+    {t:"Geometría", h:"El alambre es el perímetro: $2\\pi r=L$ ⇒ $A=\\pi r^2=\\dfrac{L^2}{4\\pi}$."},
+    {t:"Cambio de variable", h:"$g(\\ell)=\\ell^2/(4\\pi)$ es creciente: $\\ell=\\sqrt{4\\pi a}$, $\\frac{d\\ell}{da}=\\sqrt{\\pi/a}$, y $f_A(a)=5\\sqrt{\\pi/a}$."},
+    {t:"Soporte", h:"$a\\in[0{,}81/(4\\pi),\\,1{,}21/(4\\pi)]\\approx[0{,}0645;\\,0{,}0963]$."},
+    {t:"Esperanza sin densidad", h:"$E(A)=\\dfrac{Var(L)+E(L)^2}{4\\pi}=\\dfrac{1+0{,}04/12}{4\\pi}=\\dfrac{301}{1200\\pi}$, un poco más que $\\tfrac1{4\\pi}$: $\\ell^2$ es convexa."}
+  ],
+  sim:{
+    controles:[ {id:"d", label:"Semiancho del intervalo de L (×100)", min:2, max:40, step:1, val:10} ],
+    draw:function(ctx,W,H,p){
+      const d=p.d/100, lo=(1-d)*(1-d)/(4*Math.PI), hi=(1+d)*(1+d)/(4*Math.PI), c=1/(2*d);
+      const f=a=>a<lo||a>hi?0:c*Math.sqrt(Math.PI/a);
+      const xs=muestra(20000,4,R=>{ const L=1-d+2*d*R(); return L*L/(4*Math.PI); });
+      const ymax=f(lo)*1.25;
+      const m=ejes(ctx,W,H,0.03,0.16,0,ymax,{nx:13,ny:4,dx:2,dy:0,tit:'Densidad del área: fórmula (azul) e histograma de 20 000 alambres (verde)'});
+      histo(ctx,m,xs,60,lo,hi); curvaF(ctx,m,f,'--accent',2.4,lo,hi,200);
+      const EA=(1+d*d/3)/(4*Math.PI), ee=xs.reduce((a,b)=>a+b,0)/xs.length;
+      linea(ctx,m.X(EA),m.Y(0),m.X(EA),m.Y(ymax),'--warn',1.6,[5,4]);
+      return {"E(A) fórmula":fm(EA,5),"E(A) simulada":fm(ee,5),"1/(4π)":fm(1/(4*Math.PI),5)};
+    }
+  }
+},
+{
+  id:"ej5", g:"Funciones de una v.a. (4–5, 9–10)", titulo:"5. El producto de los dos pedazos",
+  tema:"función no monótona · por la acumulada",
+  enunciado:ENUN.ej5,
+  resultado:"$W=X(1-X)$: $f_W(w)=\\dfrac{2}{\\sqrt{1-4w}}$, $0<w<\\tfrac14$; $E(W)=\\tfrac16$.",
+  pasos:[
+    {t:"No es monótona", h:"$x(1-x)$ sube hasta $x=\\tfrac12$ y baja: dos valores de $x$ para cada $w$. Conviene la acumulada."},
+    {t:"Acumulada", h:"$x(1-x)\\le w\\iff x\\le x_1$ o $x\\ge x_2$, con $x_{1,2}=\\tfrac{1\\mp\\sqrt{1-4w}}2$: $F_W(w)=1-\\sqrt{1-4w}$."},
+    {t:"Densidad", h:"Derivando, $f_W(w)=\\dfrac2{\\sqrt{1-4w}}$: explota en $w=\\tfrac14$, pero es integrable."},
+    {t:"Esperanza", h:"$E(W)=E(X)-E(X^2)=\\tfrac12-\\tfrac13=\\tfrac16$."}
+  ],
+  sim:{
+    controles:[ {id:"w", label:"w (×1000)", min:1, max:249, step:1, val:200} ],
+    draw:function(ctx,W,H,p){
+      const w=p.w/1000, f=v=>v<=0||v>=.25?NaN:2/Math.sqrt(1-4*v), F=v=>1-Math.sqrt(1-4*v);
+      const xs=muestra(20000,5,R=>{ const x=R(); return x*(1-x); });
+      const m=ejes(ctx,W*0.55,H,0,0.25,0,12,{nx:5,ny:4,dx:2,dy:0,tit:'f_W (azul) e histograma (verde); en naranja P(W ≤ w)'});
+      sombra(ctx,m,v=>2/Math.sqrt(1-4*v),0,w,'--warn',.4); histo(ctx,m,xs,50,0,0.25); curvaF(ctx,m,f,'--accent',2.4,0.0001,0.2499,300);
+      const m2=ejes(ctx,W,H,0,1,0,0.25,{L:W*0.62,nx:4,ny:5,dx:2,dy:2,tit:'x(1−x): los x con producto ≤ w'});
+      const x1=(1-Math.sqrt(1-4*w))/2, x2=1-x1;
+      ctx.fillStyle=alpha(C('--warn'),.35); ctx.fillRect(m2.X(0),m2.Y(.25),m2.X(x1)-m2.X(0),m2.Y(0)-m2.Y(.25)); ctx.fillRect(m2.X(x2),m2.Y(.25),m2.X(1)-m2.X(x2),m2.Y(0)-m2.Y(.25));
+      curvaF(ctx,m2,x=>x*(1-x),'--accent',2.4); linea(ctx,m2.X(0),m2.Y(w),m2.X(1),m2.Y(w),'--warn',1.5,[5,4]);
+      return {"F_W(w) = 1 − √(1−4w)":fm(F(w),4),"simulada":fm(frac(xs,v=>v<=w),4),"E(W)":"1/6"};
+    }
+  }
+},
+/* ─────────────── BLOQUE 3: probabilidad geométrica ─────────────── */
+{
+  id:"ej6", g:"Probabilidad geométrica (6–8)", titulo:"6. Lejos de los vértices",
+  tema:"área favorable / área total",
+  enunciado:ENUN.ej6,
+  resultado:"$P=1-\\dfrac{2\\pi}{9\\sqrt3}\\approx0{,}5969$.",
+  pasos:[
+    {t:"Uniforme en el triángulo", h:"La probabilidad es área favorable sobre área total $\\tfrac{9\\sqrt3}4$."},
+    {t:"La región desfavorable", h:"A distancia $\\le1$ de un vértice: tres sectores de radio 1 y $60°$, que no se tocan porque el lado es $3>2$."},
+    {t:"Áreas", h:"Cada sector: $\\tfrac{\\pi\\cdot60}{360}=\\tfrac\\pi6$; los tres, $\\tfrac\\pi2$ (juntos forman medio círculo)."},
+    {t:"Resultado", h:"$1-\\dfrac{\\pi/2}{9\\sqrt3/4}=1-\\dfrac{2\\pi}{9\\sqrt3}\\approx0{,}597$."}
+  ],
+  sim:{
+    controles:[ {id:"r", label:"Radio (×10)", min:1, max:15, step:1, val:10} ],
+    acciones:[ {label:"Otros 3 000 puntos", fn:(st,rep)=>{ st.k=(st.k||0)+1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const r=p.r/10, h=1.5*Math.sqrt(3), V=[[0,0],[3,0],[1.5,h]], R=LCG(60+(st.k||0)), pts=[];
+      for(let i=0;i<3000;i++){ let u=R(), v=R(); if(u+v>1){u=1-u;v=1-v;} pts.push([3*u+1.5*v, h*v]); }
+      const m=ejesIso(ctx,W*0.6,H,-0.2,3.2,-0.2,h+0.2,{L:60,nx:4,ny:3,dx:0,dy:1,tit:'Verde: a más de r de todos los vértices'});
+      const dmin=q=>Math.min(...V.map(v=>Math.hypot(q[0]-v[0],q[1]-v[1])));
+      nube(ctx,m,pts,q=>dmin(q)>r?alpha(C('--accent2'),.8):alpha(C('--bad'),.8),1.5);
+      marco2(ctx,m,V,'--accent');
+      const emp=frac(pts,q=>dmin(q)>r), teo=r<=1.5?1-(Math.PI*r*r/2)/(9*Math.sqrt(3)/4):NaN;
+      T(ctx,'P teórica (válida si r ≤ 1,5)',W*0.64,120,{s:13,col:'--muted'}); T(ctx,fm(teo,4),W*0.64,150,{s:26,b:1,col:'--accent'});
+      T(ctx,'Proporción simulada',W*0.64,210,{s:13,col:'--muted'}); T(ctx,fm(emp,4),W*0.64,240,{s:26,b:1,col:'--accent2'});
+      return {"r":fm(r,1),"teórica":fm(teo,4),"simulada":fm(emp,4)};
+    }
+  }
+},
+{
+  id:"ej7", g:"Probabilidad geométrica (6–8)", titulo:"7. Un dado decide cuántos números sumar",
+  tema:"mezcla de densidades · Bayes con continuas",
+  enunciado:ENUN.ej7,
+  resultado:"(a) $f_Z=\\tfrac{1+2z}3$ en $[0,1]$, $\\tfrac{2(2-z)}3$ en $(1,2]$; $F_Z=\\tfrac{z+z^2}3$ en $[0,1]$, $\\tfrac{-z^2+4z-1}3$ en $(1,2]$; $E(Z)=\\tfrac56$, $Var(Z)=\\tfrac7{36}$. (b) $\\tfrac4{27}\\approx0{,}148$.",
+  pasos:[
+    {t:"Probabilidad total", h:"$F_Z=\\tfrac13F_U+\\tfrac23F_{U_1+U_2}$: mezcla de dos acumuladas continuas, así que $Z$ es continua."},
+    {t:"La suma de dos uniformes", h:"Tiene densidad triangular en $[0,2]$ con pico en 1."},
+    {t:"Mezcla", h:"$f_Z=\\tfrac13\\mathbf 1_{[0,1]}+\\tfrac23$ triángulo. $E(Z)=\\tfrac13\\cdot\\tfrac12+\\tfrac23\\cdot1=\\tfrac56$."},
+    {t:"Bayes", h:"$P(Z>\\tfrac34)=\\tfrac9{16}$ y $P(D<3,Z>\\tfrac34)=\\tfrac13\\cdot\\tfrac14$: $P(D<3\\mid Z>\\tfrac34)=\\tfrac4{27}$."},
+    {t:"Lectura", h:"Ver un $Z$ grande hace mucho menos probable que se haya sorteado un solo número."}
+  ],
+  sim:{
+    controles:[ {id:"t", label:"Umbral t (×100)", min:0, max:195, step:1, val:75} ],
+    draw:function(ctx,W,H,p){
+      const t=p.t/100, R=LCG(77), xs=[], dd=[];
+      for(let i=0;i<20000;i++){ const d=1+Math.floor(R()*6); const z=d<3?R():R()+R(); xs.push(z); dd.push(d); }
+      const m=ejes(ctx,W*0.62,H,0,2,0,1.2,{nx:8,ny:4,dx:2,dy:1,tit:'f_Z: 1/3·(uniforme) + 2/3·(triangular); en naranja Z > t'});
+      sombra(ctx,m,fZ7,t,2,'--warn',.4); histo(ctx,m,xs,40,0,2); curvaF(ctx,m,fZ7,'--accent',2.4,0,2,400);
+      curvaF(ctx,m,z=>z<=1?1/3:0,'--muted',1.2,0,1);
+      const PZ=t<=1?1-(t+t*t)/3:1-(-t*t+4*t-1)/3, num=t<1?(1-t)/3:0, post=num/PZ;
+      let a=0,b=0; for(let i=0;i<xs.length;i++) if(xs[i]>t){ b++; if(dd[i]<3) a++; }
+      T(ctx,'P(dado < 3 | Z > t)',W*0.66,120,{s:13,col:'--muted'}); T(ctx,fm(post,4),W*0.66,152,{s:26,b:1,col:'--accent'});
+      T(ctx,'simulada: '+fm(b?a/b:NaN,4),W*0.66,184,{s:14,col:'--accent2'});
+      T(ctx,'sin información: 1/3',W*0.66,220,{s:13,col:'--muted'});
+      return {"P(Z > t)":fm(PZ,4),"posterior":fm(post,4),"t = 0,75 ⇒":"4/27 ≈ 0,1481"};
+    }
+  }
+},
+{
+  id:"ej8", g:"Probabilidad geométrica (6–8)", titulo:"8. Punto en el círculo y su cuerda",
+  tema:"distancia al centro · paradoja de Bertrand",
+  enunciado:ENUN.ej8,
+  resultado:"(a) $P(|OP|<d)=d^2$, $0\\le d\\le1$. (b) $X=2\\sqrt{1-\\rho^2}>\\sqrt3\\iff\\rho<\\tfrac12$, así que $P=\\tfrac14$.",
+  pasos:[
+    {t:"Áreas", h:"$P(|OP|<d)=\\dfrac{\\pi d^2}{\\pi}=d^2$."},
+    {t:"La cuerda", h:"La cuerda con punto medio $P$ es perpendicular a $OP$; por Pitágoras mide $2\\sqrt{1-\\rho^2}$, con $\\rho=|OP|$."},
+    {t:"Traducir", h:"$2\\sqrt{1-\\rho^2}>\\sqrt3\\iff\\rho<\\tfrac12$, y por (a) eso tiene probabilidad $\\tfrac14$."},
+    {t:"Bertrand", h:"“Una cuerda al azar” depende de cómo se sortee: por el punto medio da $\\tfrac14$; con dos puntos del borde, $\\tfrac13$."}
+  ],
+  sim:{
+    controles:[ {id:"d", label:"d (×100)", min:5, max:100, step:1, val:50} ],
+    acciones:[ {label:"Otro punto", fn:(st,rep)=>{ st.k=(st.k||0)+1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const d=p.d/100, R=LCG(8), pts=[];
+      while(pts.length<2500){ const x=2*R()-1, y=2*R()-1; if(x*x+y*y<1) pts.push([x,y]); }
+      const m=ejesIso(ctx,W*0.6,H,-1.1,1.1,-1.1,1.1,{L:60,nx:4,ny:4,dx:1,dy:1,tit:'Verde: |OP| < d'});
+      nube(ctx,m,pts,q=>Math.hypot(q[0],q[1])<d?alpha(C('--accent2'),.85):alpha(C('--muted'),.45),1.4);
+      ctx.strokeStyle=C('--accent'); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(m.X(0),m.Y(0),m.X(1)-m.X(0),0,7); ctx.stroke();
+      const R2=LCG(900+(st.k||0)); let q; do{ q=[2*R2()-1,2*R2()-1]; }while(q[0]*q[0]+q[1]*q[1]>=1);
+      const rho=Math.hypot(q[0],q[1]), hl=Math.sqrt(1-rho*rho), ux=-q[1]/(rho||1), uy=q[0]/(rho||1);
+      linea(ctx,m.X(q[0]-hl*ux),m.Y(q[1]-hl*uy),m.X(q[0]+hl*ux),m.Y(q[1]+hl*uy),rho<.5?'--accent2':'--warn',2.6);
+      punto(ctx,m.X(q[0]),m.Y(q[1]),5,'--ink');
+      return {"d²":fm(d*d,4),"simulada":fm(frac(pts,z=>Math.hypot(z[0],z[1])<d),4),"cuerda de este punto":fm(2*hl,3)+(2*hl>Math.sqrt(3)?' > √3':' ≤ √3')};
+    }
+  }
+},
+{
+  id:"ej9", g:"Funciones de una v.a. (4–5, 9–10)", titulo:"9. Don Zoilo, Aurora y Belinda",
+  tema:"probabilidad total · cambio de variable por tramos",
+  enunciado:ENUN.ej9,
+  resultado:"(a) $e^{-8/5}+0{,}2\\,(e^{-3/5}-e^{-6/5})\\approx0{,}2514$. (b) $f_W=\\tfrac35w^2e^{-w^3/5}$ en $(0,2]$; $\\dfrac{7}{10\\sqrt{7(w+5)}}e^{-(1+\\sqrt{7(w+5)})/5}$ en $(2,23]$; $\\tfrac1{10}e^{-(w+7)/10}$ si $w>23$.",
+  pasos:[
+    {t:"Modelo", h:"$X\\sim$ Exp de media 5; Belinda da $B\\in\\{0,5\\}$ con $P(B=5)=0{,}2$, independiente de $X$, y sólo se la ordeña si $X<6$."},
+    {t:"Por casos", h:"Si $X\\ge6$, hay más de 8 litros sii $X>8$. Si $X<6$ hace falta $B=5$ y $X>3$."},
+    {t:"(a)", h:"$e^{-8/5}+0{,}2\\,(e^{-3/5}-e^{-6/5})\\approx0{,}2514$."},
+    {t:"(b) g es creciente y continua", h:"Empalma en $g(8)=2$ y $g(15)=23$: se invierte cada tramo y se multiplica por la derivada de la inversa."},
+    {t:"Control", h:"La densidad obtenida integra 1, y el histograma de $g(X)$ la reproduce (simulación)."}
+  ],
+  sim:{
+    controles:[ {id:"v", tipo:"select", label:"Ver", opts:["(a) leche total del día","(b) kilos de manteca W = g(X)"], val:0}, {id:"t", label:"Umbral de leche (litros)", min:1, max:20, step:1, val:8} ],
+    draw:function(ctx,W,H,p){
+      const R=LCG(12), xs=[], tot=[];
+      for(let i=0;i<30000;i++){ const x=expo(R,5), b=R()<.2?5:0; xs.push(x); tot.push(x+(x<6?b:0)); }
+      if(p.v===0){
+        const t=p.t, teo=t>=11?Math.exp(-t/5):(t>=6?Math.exp(-t/5)+0.2*(Math.exp(-Math.max(0,t-5)/5)-Math.exp(-6/5)):NaN);
+        const m=ejes(ctx,W,H,0,25,0,0.25,{nx:10,ny:5,dx:0,dy:2,tit:'Histograma de la leche total (simulada); la densidad de Aurora sola en azul'});
+        histo(ctx,m,tot,100,0,25); curvaF(ctx,m,x=>Math.exp(-x/5)/5,'--accent',2);
+        linea(ctx,m.X(t),m.Y(0),m.X(t),m.Y(.25),'--warn',2,[5,4]);
+        return {"P(total > t) simulada":fm(frac(tot,v=>v>t),4),"t = 8 (fórmula)":"0,2514","fórmula para este t":fm(teo,4)};
+      }
+      const ws=xs.map(gW9);
+      const m=ejes(ctx,W,H,0,40,0,0.5,{nx:8,ny:5,dx:0,dy:1,tit:'Kilos de manteca: densidad por tramos (azul) e histograma (verde); cortes en w = 2 y w = 23'});
+      histo(ctx,m,ws,160,0,40); curvaF(ctx,m,fW9,'--accent',2.2,0.001,40,800);
+      linea(ctx,m.X(2),m.Y(0),m.X(2),m.Y(.5),'--warn',1.2,[4,4]); linea(ctx,m.X(23),m.Y(0),m.X(23),m.Y(.5),'--warn',1.2,[4,4]);
+      return {"P(W ≤ 2) = P(X ≤ 8)":fm(1-Math.exp(-8/5),4),"simulada":fm(frac(ws,v=>v<=2),4)};
+    }
+  }
+},
+{
+  id:"ej10", g:"Funciones de una v.a. (4–5, 9–10)", titulo:"10. Transformar una Uniforme(−1, 1)",
+  tema:"no monótona (X²) · monótona con cola pesada",
+  enunciado:ENUN.ej10,
+  resultado:"(a) $f_Y(y)=\\dfrac1{2\\sqrt y}$, $0<y<1$. (b) $f_Y(y)=\\dfrac1{2(1-y)^2}$, $y<\\tfrac12$.",
+  pasos:[
+    {t:"(a) Dos ramas", h:"$P(X^2\\le y)=P(-\\sqrt y\\le X\\le\\sqrt y)=\\sqrt y$; derivando, $\\tfrac1{2\\sqrt y}$."},
+    {t:"(b) Monótona", h:"$y=\\tfrac x{1+x}$ es creciente en $(-1,1)$ y va de $-\\infty$ a $\\tfrac12$."},
+    {t:"Inversa y derivada", h:"$x=\\tfrac y{1-y}$, $\\tfrac{dx}{dy}=\\tfrac1{(1-y)^2}$: $f_Y=\\tfrac12\\cdot\\tfrac1{(1-y)^2}$."},
+    {t:"Cola", h:"La cola izquierda decae como $1/y^2$: la densidad integra 1 pero $E(Y)$ no existe."}
+  ],
+  sim:{
+    controles:[ {id:"c", tipo:"select", label:"Transformación", opts:["(a) Y = X²","(b) Y = X/(1+X)"], val:0} ],
+    draw:function(ctx,W,H,p){
+      if(p.c===0){ const ys=muestra(20000,3,R=>{ const x=2*R()-1; return x*x; });
+        const m=ejes(ctx,W,H,0,1,0,4,{nx:10,ny:4,dx:1,dy:0,tit:'Y = X²: f_Y(y) = 1/(2√y) (azul) e histograma (verde)'});
+        histo(ctx,m,ys,50,0,1); curvaF(ctx,m,y=>1/(2*Math.sqrt(y)),'--accent',2.4,0.002,1);
+        return {"P(Y ≤ 1/4) = 1/2":fm(frac(ys,v=>v<=.25),4)}; }
+      const ys=muestra(20000,4,R=>{ const x=2*R()-1; return x/(1+x); });
+      const m=ejes(ctx,W,H,-6,0.5,0,0.6,{nx:13,ny:4,dx:1,dy:2,tit:'Y = X/(1+X): f_Y(y) = 1/(2(1−y)²) para y < 1/2 (se muestra y > −6)'});
+      histo(ctx,m,ys,130,-6,0.5); curvaF(ctx,m,y=>0.5/((1-y)*(1-y)),'--accent',2.4,-6,0.5);
+      return {"P(Y < −6) fórmula = 1/14":fm(1/14,4),"simulada":fm(frac(ys,v=>v<-6),4)};
+    }
+  }
+},
+/* ─────────────── BLOQUE 4: vectores continuos ─────────────── */
+{
+  id:"ej11", g:"Vectores aleatorios continuos (11–15)", titulo:"11. Densidad en un triángulo",
+  tema:"constante · marginales con límites variables",
+  enunciado:ENUN.ej11,
+  resultado:"(a) $C=\\tfrac67$. (b) $f_X(x)=\\tfrac37(3+2x-5x^2)$, $f_Y(y)=3y^2$ en $[0,1]$; no son independientes. (c) $P(Y-X\\le\\tfrac12)=\\tfrac57$.",
+  pasos:[
+    {t:"Constante", h:"$\\int_0^1\\int_0^y(3y+x)\\,dx\\,dy=\\int_0^1\\tfrac72y^2dy=\\tfrac76$ ⇒ $C=\\tfrac67$."},
+    {t:"Marginales", h:"Los límites los pone el triángulo: $f_X(x)=\\int_x^1$, $f_Y(y)=\\int_0^y$."},
+    {t:"Independencia", h:"El soporte no es un rectángulo: la conjunta se anula donde el producto de marginales no. No son independientes."},
+    {t:"(c) por complemento", h:"$Y-X>\\tfrac12$ es un triangulito en la esquina: probabilidad $\\tfrac27$, así que $P(Y-X\\le\\tfrac12)=\\tfrac57$."}
+  ],
+  sim:{
+    controles:[ {id:"d", label:"Umbral δ en Y − X ≤ δ (×100)", min:0, max:100, step:1, val:50} ],
+    draw:function(ctx,W,H,p){
+      const d=p.d/100, R=LCG(11), pts=[];
+      while(pts.length<3000){ const x=R(), y=R(); if(x<=y && R()*4<=3*y+x) pts.push([x,y]); }
+      const m=ejesIso(ctx,W*0.5,H,0,1,0,1,{L:60,nx:4,ny:4,dx:2,dy:2,tit:'Puntos de la conjunta; verde: Y − X ≤ δ'});
+      nube(ctx,m,pts,q=>q[1]-q[0]<=d?alpha(C('--accent2'),.8):alpha(C('--warn'),.8),1.5);
+      marco2(ctx,m,[[0,0],[1,1],[0,1]],'--accent');
+      const q=1-d, exact=1-q*q*q-(9/7)*d*q*q;
+      const m2=ejes(ctx,W,H,0,1,0,3,{L:W*0.58,nx:4,ny:3,dx:2,dy:0,tit:'Marginales: f_X (azul), f_Y (verde)'});
+      curvaF(ctx,m2,x=>3/7*(3+2*x-5*x*x),'--accent',2.2); curvaF(ctx,m2,y=>3*y*y,'--accent2',2.2);
+      return {"P(Y − X ≤ δ) exacta":fm(exact,4),"simulada":fm(frac(pts,z=>z[1]-z[0]<=d),4),"δ = 1/2 ⇒":"5/7 ≈ 0,7143"};
+    }
+  }
+},
+{
+  id:"ej12", g:"Vectores aleatorios continuos (11–15)", titulo:"12. Uniforme en un cuadrado girado",
+  tema:"cov = 0 sin independencia",
+  enunciado:ENUN.ej12,
+  resultado:"(a) $f_X(x)=1-|x|$, $f_Y(y)=1-|y|$ en $[-1,1]$. (b) $cov(X,Y)=0$, pero no son independientes.",
+  pasos:[
+    {t:"Densidad", h:"El cuadrado $|x|+|y|\\le1$ tiene área 2: $f=\\tfrac12$ adentro."},
+    {t:"Marginal", h:"Para $x$ fijo, $y$ recorre un intervalo de largo $2(1-|x|)$: $f_X(x)=1-|x|$, triangular."},
+    {t:"Covarianza", h:"Simetría $x\\mapsto-x$: $E(X)=0$ y $E(XY)=0$. Así $cov=0$."},
+    {t:"Pero no independientes", h:"Si $X$ está cerca de 1, $Y$ está forzada cerca de 0: $f(0{,}9;0{,}9)=0\\neq f_X f_Y$."}
+  ],
+  sim:{
+    controles:[ {id:"x", label:"Fijar X ≈ x (×100)", min:-95, max:95, step:5, val:70} ],
+    draw:function(ctx,W,H,p){
+      const x0=p.x/100, R=LCG(12), pts=[];
+      while(pts.length<3000){ const x=2*R()-1, y=2*R()-1; if(Math.abs(x)+Math.abs(y)<=1) pts.push([x,y]); }
+      const m=ejesIso(ctx,W*0.6,H,-1.1,1.1,-1.1,1.1,{L:60,nx:4,ny:4,dx:1,dy:1,tit:'Naranja: la franja X ≈ x; Y queda en [−(1−|x|), 1−|x|]'});
+      nube(ctx,m,pts,q=>Math.abs(q[0]-x0)<.05?C('--warn'):alpha(C('--accent2'),.6),1.5);
+      marco2(ctx,m,[[1,0],[0,1],[-1,0],[0,-1]],'--accent');
+      let sx=0,sy=0,sxy=0; pts.forEach(q=>{sx+=q[0];sy+=q[1];sxy+=q[0]*q[1];}); const n=pts.length, cov=sxy/n-sx*sy/n/n;
+      T(ctx,'Rango de Y dado X = '+fm(x0,2)+':',W*0.64,130,{s:13,col:'--muted'});
+      T(ctx,'['+fm(-(1-Math.abs(x0)),2)+' ; '+fm(1-Math.abs(x0),2)+']',W*0.64,160,{s:22,b:1,col:'--warn'});
+      T(ctx,'cov simulada: '+fm(cov,4),W*0.64,210,{s:15,col:'--accent2'});
+      return {"cov(X,Y)":"0","f(0,9;0,9)":"0","f_X(0,9)·f_Y(0,9)":"0,01"};
+    }
+  }
+},
+{
+  id:"ej13", g:"Vectores aleatorios continuos (11–15)", titulo:"13. Densidad e^{−y} sobre 0 < x ≤ y",
+  tema:"probabilidad condicional con regiones",
+  enunciado:ENUN.ej13,
+  resultado:"(a) $\\dfrac{e^{-2}-3e^{-4}}{1-5e^{-4}}=\\dfrac{e^2-3}{e^4-5}\\approx0{,}0885$. (b) No son independientes.",
+  pasos:[
+    {t:"Marginal de Y", h:"$f_Y(y)=\\int_0^ye^{-y}dx=ye^{-y}$: $P(Y<4)=1-5e^{-4}$."},
+    {t:"Numerador", h:"$P(X>2,Y<4)=\\int_2^4\\int_2^ye^{-y}dx\\,dy=\\int_2^4(y-2)e^{-y}dy=e^{-2}-3e^{-4}$."},
+    {t:"Cociente", h:"$\\approx0{,}0885$: para que $X>2$ con $Y<4$ el punto tiene que caer en un triangulito."},
+    {t:"(b)", h:"Soporte no rectangular; además $X\\mid Y=y$ es uniforme en $(0,y)$ y depende de $y$."}
+  ],
+  sim:{
+    controles:[ {id:"a", label:"a en P(X > a | Y < 4) (×10)", min:0, max:39, step:1, val:20} ],
+    draw:function(ctx,W,H,p){
+      const a=p.a/10, R=LCG(13), pts=[];
+      for(let i=0;i<4000;i++){ let u=R(); while(u<1e-12) u=R(); let v=R(); while(v<1e-12) v=R(); const y=-Math.log(u)-Math.log(v); pts.push([R()*y,y]); }
+      const m=ejes(ctx,W*0.62,H,0,6,0,6,{nx:6,ny:6,dx:0,dy:0,tit:'Puntos (X,Y); cuadro Y < 4; naranja: X > a dentro del cuadro'});
+      nube(ctx,m,pts.filter(q=>q[1]<=6),q=>q[1]<4?(q[0]>a?C('--warn'):alpha(C('--accent2'),.7)):alpha(C('--muted'),.35),1.4);
+      linea(ctx,m.X(0),m.Y(4),m.X(6),m.Y(4),'--accent',1.5,[5,4]); linea(ctx,m.X(a),m.Y(0),m.X(a),m.Y(6),'--warn',1.2,[4,4]);
+      const teo=(a<4)?(Math.exp(-a)*(1)-Math.exp(-4)*(1+4-a))/(1-5*Math.exp(-4)):0;
+      const In=pts.filter(q=>q[1]<4);
+      T(ctx,'P(X > a | Y < 4)',W*0.66,120,{s:13,col:'--muted'}); T(ctx,fm(teo,4),W*0.66,152,{s:26,b:1,col:'--accent'});
+      T(ctx,'simulada: '+fm(frac(In,q=>q[0]>a),4),W*0.66,186,{s:14,col:'--accent2'});
+      return {"a":fm(a,1),"P(X > a | Y < 4)":fm(teo,4),"a = 2 ⇒":"0,0885"};
+    }
+  }
+},
+{
+  id:"ej14", g:"Vectores aleatorios continuos (11–15)", titulo:"14. Primero X, después Y uniforme en (0, X)",
+  tema:"modelo jerárquico · marginal −ln y · condicional de X dado Y",
+  enunciado:ENUN.ej14,
+  resultado:"(a) $\\tfrac12$ y $\\tfrac14$. (b) $f_Y(y)=-\\ln y$, $0<y<1$. (c) $\\dfrac{\\ln3}{-\\ln y}$ si $y\\le\\tfrac14$; $\\dfrac{\\ln(3/(4y))}{-\\ln y}$ si $\\tfrac14<y<\\tfrac34$; $0$ si $y\\ge\\tfrac34$.",
+  pasos:[
+    {t:"Conjunta", h:"$f(x,y)=f_X(x)f_{Y\\mid X}(y\\mid x)=\\tfrac1x$ en $0\\le y\\le x\\le1$."},
+    {t:"(a)", h:"Dado $X=\\tfrac12$, $Y\\sim Un(0,\\tfrac12)$: $\\tfrac12$. Sin condicionar, $\\int_{1/4}^{1/2}(-\\ln y)dy=\\tfrac14$ exacto."},
+    {t:"(b)", h:"$f_Y(y)=\\int_y^1\\tfrac{dx}x=-\\ln y$: se acumula cerca de 0."},
+    {t:"(c) Bayes continuo", h:"$f_{X\\mid Y}(x\\mid y)=\\dfrac{1/x}{-\\ln y}$ en $[y,1]$; se integra entre $\\max(y,\\tfrac14)$ y $\\tfrac34$."}
+  ],
+  sim:{
+    controles:[ {id:"y", label:"Condicionar a Y ≈ y (×100)", min:2, max:95, step:1, val:20} ],
+    draw:function(ctx,W,H,p){
+      const y0=p.y/100, R=LCG(14), pts=[];
+      for(let i=0;i<5000;i++){ const x=R(); pts.push([x,x*R()]); }
+      const m=ejesIso(ctx,W*0.5,H,0,1,0,1,{L:60,nx:4,ny:4,dx:2,dy:2,tit:'(X, Y); franja Y ≈ y en naranja'});
+      nube(ctx,m,pts,q=>Math.abs(q[1]-y0)<.015?C('--warn'):alpha(C('--accent2'),.55),1.3);
+      linea(ctx,m.X(.25),m.Y(0),m.X(.25),m.Y(1),'--accent',1,[4,4]); linea(ctx,m.X(.75),m.Y(0),m.X(.75),m.Y(1),'--accent',1,[4,4]);
+      const teo=y0>=.75?0:Math.log(.75/Math.max(y0,.25))/(-Math.log(y0));
+      const band=pts.filter(q=>Math.abs(q[1]-y0)<.015);
+      T(ctx,'P(1/4 ≤ X ≤ 3/4 | Y = y)',W*0.56,120,{s:13,col:'--muted'}); T(ctx,fm(teo,4),W*0.56,152,{s:26,b:1,col:'--accent'});
+      T(ctx,'en la franja simulada: '+fm(frac(band,q=>q[0]>=.25&&q[0]<=.75),3)+' ('+band.length+' puntos)',W*0.56,186,{s:13.5,col:'--accent2'});
+      T(ctx,'f_Y(y) = −ln y = '+fm(-Math.log(y0),3),W*0.56,230,{s:13.5,col:'--muted'});
+      return {"y":fm(y0,2),"P(1/4 ≤ X ≤ 3/4 | Y = y)":fm(teo,4)};
+    }
+  }
+},
+{
+  id:"ej15", g:"Vectores aleatorios continuos (11–15)", titulo:"15. Regresiones de 8xy",
+  tema:"esperanza condicional continua",
+  enunciado:ENUN.ej15,
+  resultado:"$E(Y\\mid X)=\\dfrac{2X}{3}$, $\\;E(X\\mid Y)=\\dfrac{2(1+Y+Y^2)}{3(1+Y)}$.",
+  pasos:[
+    {t:"Marginales", h:"$f_X(x)=4x^3$ y $f_Y(y)=4y(1-y^2)$ en $(0,1)$."},
+    {t:"Condicionales", h:"$f_{Y\\mid X}(y\\mid x)=\\tfrac{2y}{x^2}$ en $(0,x)$; $f_{X\\mid Y}(x\\mid y)=\\tfrac{2x}{1-y^2}$ en $(y,1)$."},
+    {t:"E(Y | X)", h:"$\\int_0^x y\\tfrac{2y}{x^2}dy=\\tfrac{2x}3$: una recta."},
+    {t:"E(X | Y)", h:"$\\int_y^1\\tfrac{2x^2}{1-y^2}dx=\\tfrac{2(1-y^3)}{3(1-y^2)}=\\tfrac{2(1+y+y^2)}{3(1+y)}$: una curva que va de $\\tfrac23$ a $1$."},
+    {t:"Control", h:"$E[E(Y\\mid X)]=\\tfrac23E(X)=\\tfrac23\\cdot\\tfrac45=\\tfrac8{15}=E(Y)$."}
+  ],
+  sim:{
+    controles:[ {id:"x", label:"x (×100)", min:5, max:99, step:1, val:60} ],
+    draw:function(ctx,W,H,p){
+      const x0=p.x/100, R=LCG(15), pts=[];
+      while(pts.length<4000){ const x=R(), y=R(); if(y<x && R()<x*y) pts.push([x,y]); }
+      const m=ejesIso(ctx,W*0.6,H,0,1,0,1,{L:60,nx:4,ny:4,dx:2,dy:2,tit:'Puntos de 8xy; E(Y|X=x) naranja, E(X|Y=y) azul'});
+      nube(ctx,m,pts,null,1.3);
+      curvaF(ctx,m,x=>2*x/3,'--warn',2.6);
+      ctx.strokeStyle=C('--accent'); ctx.lineWidth=2.6; ctx.beginPath(); for(let i=0;i<=100;i++){ const y=i/101, xx=2*(1+y+y*y)/(3*(1+y)); i?ctx.lineTo(m.X(xx),m.Y(y)):ctx.moveTo(m.X(xx),m.Y(y)); } ctx.stroke();
+      linea(ctx,m.X(x0),m.Y(0),m.X(x0),m.Y(x0),'--warn',1,[4,4]); punto(ctx,m.X(x0),m.Y(2*x0/3),6,'--warn');
+      const band=pts.filter(q=>Math.abs(q[0]-x0)<.02); const me=band.length?band.reduce((a,q)=>a+q[1],0)/band.length:NaN;
+      return {"E(Y | X = x) = 2x/3":fm(2*x0/3,4),"promedio en la franja":fm(me,4)};
+    }
+  }
+},
+/* ─────────────── ADICIONALES ─────────────── */
+{
+  id:"a1", g:"Ejercicios adicionales", titulo:"A1. El ángulo en el rectángulo",
+  tema:"esperanza de una función de (X, Y)",
+  enunciado:ENUN.a1,
+  resultado:"$E(\\Theta)=\\arctan\\tfrac12+\\ln2-\\tfrac38\\ln5\\approx0{,}5533$ rad $\\approx31{,}7°$.",
+  pasos:[
+    {t:"Coordenadas", h:"$A=(0,0)$, $B=(2,0)$, $P=(X,Y)$ uniforme en $[0,2]\\times[0,1]$ con densidad $\\tfrac12$."},
+    {t:"El ángulo", h:"$\\Theta=\\arctan(Y/X)$."},
+    {t:"Integral", h:"$E(\\Theta)=\\tfrac12\\int_0^2\\int_0^1\\arctan\\tfrac yx\\,dy\\,dx$; primero en $y$, después en $x$ por partes."},
+    {t:"Resultado", h:"$\\approx0{,}5533$ rad $\\approx31{,}7°$, más que el ángulo hacia el centro del rectángulo, $\\arctan\\tfrac12\\approx0{,}4636$: el promedio de la función no es la función del promedio."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[ {label:"Otros 4 000 puntos", fn:(st,rep)=>{ st.k=(st.k||0)+1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const R=LCG(21+(st.k||0)), pts=[]; for(let i=0;i<4000;i++) pts.push([2*R(),R()]);
+      const m=ejesIso(ctx,W*0.62,H,0,2,0,1,{L:60,nx:4,ny:2,dx:1,dy:1,tit:'Color según el ángulo entre AB y AP (claro = ángulo grande)'});
+      nube(ctx,m,pts,q=>{ const t=Math.atan2(q[1],q[0])/(Math.PI/2); return alpha(C('--accent'),.15+.85*t); },1.6);
+      const E=pts.reduce((a,q)=>a+Math.atan2(q[1],q[0]),0)/pts.length;
+      T(ctx,'E(Θ) exacta',W*0.66,120,{s:13,col:'--muted'}); T(ctx,'0,5533 rad',W*0.66,152,{s:24,b:1,col:'--accent'});
+      T(ctx,'promedio simulado: '+fm(E,4),W*0.66,186,{s:14,col:'--accent2'});
+      return {"E(Θ) exacta":"0,5533","simulada":fm(E,4),"en grados":fm(E*180/Math.PI,1)+"°"};
+    }
+  }
+},
+{
+  id:"a2", g:"Ejercicios adicionales", titulo:"A2. Lluvia y rendimiento: una variable mixta",
+  tema:"átomos + parte continua",
+  enunciado:ENUN.a2,
+  resultado:"(a) $F_H$: $\\tfrac1{32}$ en $[0,3)$, salto de $\\tfrac{23}{32}$ en 3, parte continua en $(3,67]$. (b) $P(H\\ge31)=\\tfrac3{32}$. (c) Ni continua ni discreta: mixta.",
+  pasos:[
+    {t:"Átomos", h:"$H=3$ si $X\\le6$: $P=\\tfrac{23}{32}$. $H=0$ si $X>10$: $P=\\tfrac1{32}$."},
+    {t:"Parte continua", h:"Para $6<X\\le10$, $H=X^2-33$ recorre $(3,67]$ con masa $\\tfrac14$."},
+    {t:"(b)", h:"$H\\ge31\\iff8\\le X\\le10$: $\\int_8^{10}\\tfrac{12-x}{64}dx=\\tfrac3{32}$."},
+    {t:"(c)", h:"Tiene átomos (no es continua) y los átomos no suman 1 (no es discreta)."}
+  ],
+  sim:{
+    controles:[ {id:"h", label:"h", min:0, max:70, step:1, val:31} ],
+    draw:function(ctx,W,H,p){
+      const Fh=h=>{ if(h<0) return 0; if(h<3) return 1/32; if(h>=67) return 1; const s=Math.sqrt(h+33); return 0.75+(12*(s-6)-(s*s-36)/2)/64; };
+      const m=ejes(ctx,W,H,-5,72,0,1,{nx:11,ny:4,dx:0,dy:2,tit:'Función de distribución de H: saltos en 0 y 3, tramo continuo en (3, 67]'});
+      curvaF(ctx,m,Fh,'--accent',2.6,-5,-0.001); curvaF(ctx,m,Fh,'--accent',2.6,0,2.999); curvaF(ctx,m,Fh,'--accent',2.6,3,72,400);
+      [[0,0,1/32],[3,1/32,24/32]].forEach(j=>{ linea(ctx,m.X(j[0]),m.Y(j[1]),m.X(j[0]),m.Y(j[2]),'--warn',1.4,[3,3]); punto(ctx,m.X(j[0]),m.Y(j[2]),5,'--accent'); });
+      punto(ctx,m.X(p.h),m.Y(Fh(p.h)),6,'--warn');
+      return {"F_H(h)":fm(Fh(p.h),4),"P(H ≥ 31)":"3/32 ≈ 0,0938"};
+    }
+  }
+},
+{
+  id:"a3", g:"Ejercicios adicionales", titulo:"A3. Producto, cociente y máximo de uniformes",
+  tema:"acumulada de funciones de dos variables",
+  enunciado:ENUN.a3,
+  resultado:"(a) $f_V(v)=-\\ln v$, $0<v<1$. (b) $f_W(w)=\\tfrac12$ si $0<w\\le1$, $\\tfrac1{2w^2}$ si $w>1$. (c) $f_Z(z)=2z$, $0<z<1$.",
+  pasos:[
+    {t:"Producto", h:"$P(XY\\le v)=v+\\int_v^1\\tfrac vx dx=v-v\\ln v$ ⇒ $f_V=-\\ln v$ (la misma marginal del ejercicio 14)."},
+    {t:"Cociente", h:"$P(X/Y\\le w)$ es un área en el cuadrado: $\\tfrac w2$ si $w\\le1$, $1-\\tfrac1{2w}$ si $w>1$."},
+    {t:"Máximo", h:"$P(\\max\\le z)=z^2$ ⇒ $f_Z=2z$."}
+  ],
+  sim:{
+    controles:[ {id:"c", tipo:"select", label:"Variable", opts:["(a) V = XY","(b) W = X/Y","(c) Z = máx{X, Y}"], val:0} ],
+    draw:function(ctx,W,H,p){
+      const g=[(x,y)=>x*y,(x,y)=>x/y,(x,y)=>Math.max(x,y)][p.c];
+      const xs=muestra(20000,31,R=>g(R(),R()||1e-9));
+      const lim=[[0,1,5],[0,5,0.6],[0,1,2.2]][p.c], f=[v=>-Math.log(v),w=>w<=1?.5:1/(2*w*w),z=>2*z][p.c];
+      const m=ejes(ctx,W,H,lim[0],lim[1],0,lim[2],{nx:10,ny:4,dx:1,dy:1,tit:'Densidad (azul) e histograma de 20 000 pares (verde)'});
+      histo(ctx,m,xs,60,lim[0],lim[1]); curvaF(ctx,m,f,'--accent',2.4,lim[0]+1e-3,lim[1],400);
+      return {"mediana simulada":fm(xs.slice().sort((a,b)=>a-b)[10000],3),"mediana teórica":["0,1867","1","0,7071"][p.c]};
+    }
+  }
+},
+{
+  id:"a4", g:"Ejercicios adicionales", titulo:"A4. Z = 3X + Y sobre una región curva",
+  tema:"densidad de una combinación lineal · límites por tramos",
+  enunciado:ENUN.a4,
+  resultado:"$c=\\tfrac{60}{241}$; $f_Z(z)=\\tfrac1{723}\\big[40z^2$ en $[0,1]$; $20(z+1)$ en $(1,4]$; $40z^2+270z-270-90(z+1)\\sqrt{4z-7}$ en $(4,6]$; $630z-990-90(z+1)\\sqrt{4z-7}$ en $(6,8]\\big]$.",
+  pasos:[
+    {t:"Constante", h:"$\\int_{[0,1]^2}(x+y)=1$ y la región curva aporta $\\tfrac{181}{60}$: $c=\\tfrac{60}{241}$."},
+    {t:"Fórmula de la densidad", h:"$f_Z(z)=\\int f(x,z-3x)\\,dx$, con integrando $c(z-2x)$."},
+    {t:"Límites", h:"Cuadrado: $x\\in[\\tfrac{z-1}3,\\tfrac z3]\\cap[0,1]$. Región curva: $x\\in[\\max(1,r(z)),\\min(2,\\tfrac z3)]$ con $r(z)=\\tfrac{-1+\\sqrt{4z-7}}2$."},
+    {t:"Tramos", h:"Los límites cambian en $z=1,3,4,6,8$. En $[3,4]$ los aportes de las dos regiones suman la misma recta que en $[1,3]$."},
+    {t:"Controles", h:"$f_Z$ es continua, se anula en 8, integra 1 y coincide con la simulación."}
+  ],
+  sim:{
+    controles:[],
+    draw:function(ctx,W,H,p){
+      const R=LCG(41), zs=[], pts=[];
+      while(zs.length<20000){ const x=2*R(), y=2*R(); const ok=(x<=1&&y<=1)||(x>1&&y<=(x-1)*(x-1)+1); if(ok&&R()*4<=x+y){ zs.push(3*x+y); if(pts.length<1500) pts.push([x,y]); } }
+      const m0=ejesIso(ctx,W*0.3,H,0,2,0,2,{L:50,nx:2,ny:2,dx:0,dy:0,tit:'Soporte'});
+      nube(ctx,m0,pts,null,1.3); curvaF(ctx,m0,x=>(x-1)*(x-1)+1,'--accent',1.8,1,2);
+      const m=ejes(ctx,W,H,0,8,0,0.3,{L:W*0.36,nx:8,ny:3,dx:0,dy:1,tit:'f_Z (azul) e histograma (verde)'});
+      histo(ctx,m,zs,80,0,8); curvaF(ctx,m,fZa4,'--accent',2.4,0,8,800);
+      [1,3,4,6].forEach(z=>linea(ctx,m.X(z),m.Y(0),m.X(z),m.Y(.3),'--warn',.8,[3,4]));
+      return {"P(Z ≤ 4) fórmula":fm(40/(3*723)+(20/723)*10.5,4),"simulada":fm(frac(zs,v=>v<=4),4)};
+    }
+  }
+},
+{
+  id:"a5", g:"Ejercicios adicionales", titulo:"A5. Uniforme entre dos parábolas",
+  tema:"cov = 0 · región favorable",
+  enunciado:ENUN.a5,
+  resultado:"(a) $cov(X,Y)=0$. (b) No son independientes. (c) $P(X+Y>\\tfrac34)=\\tfrac7{16}$.",
+  pasos:[
+    {t:"Densidad", h:"Área $\\int_0^12x^2dx=\\tfrac23$: $f=\\tfrac32$."},
+    {t:"Covarianza", h:"Simetría $y\\mapsto-y$: $E(Y)=0=E(XY)$."},
+    {t:"Independencia", h:"$Y\\mid X=x$ es uniforme en $[-x^2,x^2]$: depende de $x$."},
+    {t:"(c)", h:"Hace falta $x^2>\\tfrac34-x$, o sea $x>\\tfrac12$: $\\int_{1/2}^1\\tfrac32(x^2+x-\\tfrac34)dx=\\tfrac7{16}$."}
+  ],
+  sim:{
+    controles:[ {id:"s", label:"Umbral s en X + Y > s (×100)", min:0, max:200, step:1, val:75} ],
+    draw:function(ctx,W,H,p){
+      const s=p.s/100, R=LCG(51), pts=[];
+      while(pts.length<4000){ const x=R(), y=2*R()-1; if(Math.abs(y)<=x*x) pts.push([x,y]); }
+      const m=ejesIso(ctx,W*0.6,H,0,1,-1,1,{L:80,nx:4,ny:4,dx:2,dy:1,tit:'Región |y| ≤ x²; naranja: X + Y > s'});
+      nube(ctx,m,pts,q=>q[0]+q[1]>s?C('--warn'):alpha(C('--accent2'),.6),1.5);
+      curvaF(ctx,m,x=>x*x,'--accent',1.8); curvaF(ctx,m,x=>-x*x,'--accent',1.8);
+      linea(ctx,m.X(0),m.Y(s),m.X(1),m.Y(s-1),'--warn',1.5,[5,4]);
+      return {"simulada":fm(frac(pts,q=>q[0]+q[1]>s),4),"s = 0,75 ⇒":"7/16 = 0,4375"};
+    }
+  }
+}
+];
+
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Probabilidades y Estadística Matemática · Licenciatura en Matemática · FCEx–UNCPBA · Práctica 7</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>

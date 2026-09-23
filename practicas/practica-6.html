@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica 6 — Distribución conjunta discreta, esperanza condicional y caminata aleatoria</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+                   svg: { fontCache: 'global' }, options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e8eaf0; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee0a8; --warn:#ffb86b; --bad:#ff7b72; --line:#2a3040; --radius:12px;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f7f8fa; --panel:#ffffff; --panel2:#f0f2f6; --ink:#15181e; --muted:#5b6472;
+         --accent:#2563eb; --accent2:#0f9d58; --warn:#b45309; --bad:#c0392b; --line:#dfe3ea; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+#layout{display:flex;min-height:100vh}
+#nav{width:290px;flex:0 0 290px;background:var(--panel);border-right:1px solid var(--line);
+     padding:20px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
+#nav h1{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px 8px}
+#nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;
+       font-size:13.5px;margin-bottom:1px;border-left:3px solid transparent}
+#nav a:hover{background:var(--panel2)}
+#nav a.active{background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+#nav .grp{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+          margin:18px 0 6px 10px;font-weight:700}
+#main{flex:1;padding:34px 40px 90px;max-width:1000px}
+section.ej{display:none} section.ej.active{display:block}
+h2{font-size:25px;margin:0 0 4px;line-height:1.25}
+.tag{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:16px 0}
+.card h3{margin:0 0 10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.enunciado{border-left:3px solid var(--accent)}
+.resultado{border-left:3px solid var(--accent2)}
+.enunciado ul{margin:8px 0 0;padding-left:22px} .enunciado li{margin:3px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:140px}
+.ctl.chk{flex-direction:row;align-items:center;gap:7px;min-width:0;color:var(--ink);font-size:14px;cursor:pointer}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+            border-radius:7px;padding:5px 8px;font-size:13.5px}
+.ctl .val{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.stats b{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.stepbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.dots{display:flex;gap:5px} .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent)}
+.step{display:none;animation:fade .35s ease} .step.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stepnum{color:var(--accent);font-weight:700;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.step p{margin:0}
+footer{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:900px){#layout{flex-direction:column}#nav{width:auto;flex:none;height:auto;position:static}#main{padding:20px}}
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="nav"><h1>Ejercicios</h1><div id="navlinks"></div></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ══════ HELPERS DE DIBUJO ══════ */
+function C(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function T(ctx,s,x,y,o){o=o||{};ctx.fillStyle=o.col?C(o.col):C('--ink');
+  ctx.font=(o.b?'600 ':'')+(o.s||12)+'px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
+  ctx.textAlign=o.a||'left';ctx.textBaseline=o.vb||'alphabetic';ctx.fillText(s,x,y);}
+function RR(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function alpha(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+/* Región de un Venn de N círculos: mask[i]=true => dentro del círculo i */
+function region(ctx,W,H,cs,mask,color){
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;const o=oc.getContext('2d');
+  o.fillStyle=color;
+  const pos=cs.map((c,i)=>i).filter(i=>mask[i]);
+  if(pos.length){pos.forEach((i,k)=>{if(k)o.globalCompositeOperation='destination-in';
+    o.beginPath();o.arc(cs[i].x,cs[i].y,cs[i].r,0,7);o.fill();});}
+  else{o.fillRect(0,0,W,H);}
+  o.globalCompositeOperation='destination-out';
+  cs.forEach((c,i)=>{if(!mask[i]){o.beginPath();o.arc(c.x,c.y,c.r,0,7);o.fill();}});
+  ctx.drawImage(oc,0,0);
+}
+function outlines(ctx,cs){ctx.strokeStyle=C('--muted');ctx.lineWidth=1.6;
+  cs.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.stroke();
+    T(ctx,c.lab,c.lx,c.ly,{s:15,b:1,a:'center'});});}
+function bar(ctx,x,y,w,h,frac,color,lab,val){
+  ctx.fillStyle=alpha(C('--line'),1);RR(ctx,x,y,w,h,h/2);ctx.fill();
+  ctx.fillStyle=C(color);RR(ctx,x,y,Math.max(2,w*Math.min(1,Math.max(0,frac))),h,h/2);ctx.fill();
+  T(ctx,lab,x,y-7,{s:12,col:'--muted'});
+  if(val!==undefined)T(ctx,val,x+w,y-7,{s:12.5,b:1,a:'right'});
+}
+/* Simulador genérico para espacios muestrales finitos (grilla + checkboxes + operación) */
+function simFinito(outs,cols,evs,label){
+  return {
+    controles: evs.map(e=>({id:e.id,label:e.label,tipo:'check',val:1})).concat([
+      {id:'modo',tipo:'select',label:'Operación',val:0,
+       opts:['Intersección de los marcados','Unión de los marcados','El 1.º marcado sin los demás']}]),
+    draw:function(ctx,W,H,p){
+      const sel=evs.filter(e=>p[e.id]);
+      const test=o=>{ if(!sel.length)return false;
+        if(p.modo===0)return sel.every(e=>e.pred(o));
+        if(p.modo===1)return sel.some(e=>e.pred(o));
+        return sel[0].pred(o)&&sel.slice(1).every(e=>!e.pred(o)); };
+      const rows=Math.ceil(outs.length/cols), pad=16, top=34;
+      const cw=Math.min(120,(W-2*pad)/cols), ch=Math.min(56,(H-top-pad)/rows);
+      const x0=(W-cw*cols)/2, y0=top+((H-top-pad)-ch*rows)/2;
+      T(ctx,label||'Espacio muestral',pad,22,{s:12.5,col:'--muted'});
+      let n=0;
+      outs.forEach((o,k)=>{
+        const r=Math.floor(k/cols), c=k%cols;
+        const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+        const on=test(o); if(on)n++;
+        ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+        RR(ctx,x,y,w,h,7);ctx.fill();
+        ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+        T(ctx,o.t,x+w/2,y+h/2+4.5,{s:Math.min(14,w/4.2),b:on,a:'center',col:on?'--ink':'--muted'});
+      });
+      return {"Elementos":n, "Probabilidad":(n/outs.length).toFixed(4), "|S|":outs.length};
+    }
+  };
+}
+
+/* ══════ HELPERS ADICIONALES PARA ESTA GUÍA ══════ */
+function tiles(ctx,W,H,items,label,mark){
+  const n=items.length;
+  let cols=Math.max(1,Math.round(Math.sqrt(n*(W/H)*0.45))); cols=Math.min(cols,n);
+  const rows=Math.ceil(n/cols), pad=16, top=38, bot=26;
+  const cw=Math.min(170,(W-2*pad)/cols), ch=Math.min(54,(H-top-bot)/rows);
+  const x0=(W-cw*cols)/2, y0=top+((H-top-bot)-ch*rows)/2;
+  T(ctx,label,pad,24,{s:12.5,col:'--muted'});
+  items.forEach((s,k)=>{
+    const r=Math.floor(k/cols), c=k%cols;
+    const x=x0+c*cw+3, y=y0+r*ch+3, w=cw-6, h=ch-6;
+    const on=mark?mark(s,k):false;
+    ctx.fillStyle=on?alpha(C('--accent'),.30):C('--panel');
+    RR(ctx,x,y,w,h,7);ctx.fill();
+    ctx.strokeStyle=on?C('--accent'):C('--line');ctx.lineWidth=on?1.8:1;ctx.stroke();
+    const fs=Math.min(15,(w-10)/(String(s).length*0.60+0.5));
+    T(ctx,s,x+w/2,y+h/2+fs*0.36,{s:fs,b:on,a:'center',col:on?'--ink':'--muted'});
+  });
+}
+function LCG(seed){let s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function venn2(W,H){
+  const R=Math.min(120,H*0.34), cx=W/2, cy=H*0.54, d=R*0.85;
+  return [{x:cx-d/2,y:cy,r:R,lab:'A',lx:cx-d/2-R*0.7,ly:cy-R-14},
+          {x:cx+d/2,y:cy,r:R,lab:'B',lx:cx+d/2+R*0.7,ly:cy-R-14}];
+}
+function venn3(W,H){
+  const R=Math.min(105,H*0.30), cx=W/2, cy=H*0.50, d=R*0.95;
+  return [{x:cx-d/2,y:cy-d*0.30,r:R,lab:'M',lx:cx-d*1.15,ly:cy-R-6},
+          {x:cx+d/2,y:cy-d*0.30,r:R,lab:'A',lx:cx+d*1.15,ly:cy-R-6},
+          {x:cx,     y:cy+d*0.62,r:R,lab:'C',lx:cx,       ly:cy+R+d*0.62+6}];
+}
+function marco(ctx,W,H,lab){
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1.4;ctx.strokeRect(10,10,W-20,H-20);
+  T(ctx,lab||'S',W-18,H-16,{s:13,a:'right',col:'--muted'});
+}
+
+/* ══════ HELPERS PROPIOS DE ESTA GUÍA ══════ */
+function combi(n,k){ if(k<0||k>n) return 0; let r=1; for(let i=1;i<=k;i++) r=r*(n-k+i)/i; return r; }
+function binom(k,n,p){ return combi(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k); }
+function fm(v,d){ if(!isFinite(v)) return '—'; return Number(v).toFixed(d===undefined?4:d).replace('.',','); }
+function fr(a,b){ return a+'/'+b; }
+function gauss(R){ let u=0; while(u<1e-12) u=R(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*R()); }
+function linea(ctx,x1,y1,x2,y2,col,lw,dash){ ctx.strokeStyle=C(col||'--line'); ctx.lineWidth=lw||1.2;
+  ctx.setLineDash(dash||[]); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]); }
+function punto(ctx,x,y,r,col){ ctx.fillStyle=C(col||'--accent'); ctx.beginPath(); ctx.arc(x,y,r||3,0,7); ctx.fill(); }
+
+/* Ejes cartesianos. Devuelve el mapeo {X(x),Y(y)} y los bordes. */
+function ejes(ctx,W,H,x0,x1,y0,y1,o){
+  o=o||{}; const L=o.L||58,R=o.R||22,Tp=o.T||36,B=o.B||40;
+  const m={x0,x1,y0,y1,L,R,T:Tp,B,W,H};
+  m.X=x=>L+(x-x0)/(x1-x0)*(W-L-R); m.Y=y=>H-B-(y-y0)/(y1-y0)*(H-Tp-B);
+  linea(ctx,L,H-B,W-R,H-B,'--line',1.2); linea(ctx,L,Tp,L,H-B,'--line',1.2);
+  const nx=o.nx||5, ny=o.ny||4;
+  for(let i=0;i<=nx;i++){ const v=x0+(x1-x0)*i/nx; T(ctx,fm(v,o.dx===undefined?1:o.dx),m.X(v),H-B+16,{s:11,a:'center',col:'--muted'}); }
+  for(let i=0;i<=ny;i++){ const v=y0+(y1-y0)*i/ny; linea(ctx,L,m.Y(v),W-R,m.Y(v),'--line',.5);
+    T(ctx,fm(v,o.dy===undefined?2:o.dy),L-6,m.Y(v)+4,{s:10.5,a:'right',col:'--muted'}); }
+  if(o.tit) T(ctx,o.tit,L,22,{s:12.5,col:'--muted'});
+  if(o.xl) T(ctx,o.xl,W-R,H-B-6,{s:12,a:'right',col:'--muted'});
+  return m;
+}
+function curvaF(ctx,m,f,col,lw,a,b,N){
+  a=(a===undefined)?m.x0:a; b=(b===undefined)?m.x1:b; N=N||300;
+  ctx.strokeStyle=C(col||'--accent'); ctx.lineWidth=lw||2.2; ctx.beginPath(); let on=false;
+  for(let i=0;i<=N;i++){ const x=a+(b-a)*i/N, v=f(x);
+    if(!isFinite(v)){on=false;continue;}
+    const y=Math.max(m.y0,Math.min(m.y1,v)); const X=m.X(x),Y=m.Y(y);
+    if(on) ctx.lineTo(X,Y); else {ctx.moveTo(X,Y); on=true;} }
+  ctx.stroke();
+}
+function sombra(ctx,m,f,a,b,col,al){
+  a=Math.max(a,m.x0); b=Math.min(b,m.x1); if(b<=a) return;
+  ctx.fillStyle=alpha(C(col||'--warn'),al||.35); ctx.beginPath(); ctx.moveTo(m.X(a),m.Y(0));
+  const N=160; for(let i=0;i<=N;i++){ const x=a+(b-a)*i/N; let v=f(x); if(!isFinite(v)) v=m.y1;
+    ctx.lineTo(m.X(x),m.Y(Math.max(m.y0,Math.min(m.y1,v)))); }
+  ctx.lineTo(m.X(b),m.Y(0)); ctx.closePath(); ctx.fill();
+}
+/* Histograma de densidad de una muestra (escala de densidad, para superponer con f). */
+function histo(ctx,m,xs,nb,a,b,col){
+  if(!xs||!xs.length) return; const h=(b-a)/nb, c=new Array(nb).fill(0);
+  xs.forEach(v=>{ const k=Math.floor((v-a)/h); if(k>=0&&k<nb) c[k]++; });
+  ctx.fillStyle=alpha(C(col||'--accent2'),.45);
+  c.forEach((n,k)=>{ const d=n/(xs.length*h); const x=m.X(a+k*h), w=m.X(a+(k+1)*h)-x;
+    const y=m.Y(Math.min(d,m.y1)); ctx.fillRect(x+.5,y,Math.max(1,w-1),m.Y(0)-y); });
+}
+function nube(ctx,m,pts,colf,r){ pts.forEach(p=>{ ctx.fillStyle=colf?colf(p):alpha(C('--accent2'),.5);
+  ctx.fillRect(m.X(p[0])-(r||1.3),m.Y(p[1])-(r||1.3),2*(r||1.3),2*(r||1.3)); }); }
+/* Tabla de una conjunta discreta con marginales. P[i][j]=P(X=xs[j],Y=ys[i]). */
+function tablaConj(ctx,W,H,xs,ys,P,o){
+  o=o||{}; const nr=ys.length, nc=xs.length;
+  const x0=o.x0||80, top=o.top||46, cw=Math.min(o.cw||86,(W-x0-120)/(nc+1)), ch=Math.min(46,(H-top-40)/(nr+1));
+  T(ctx,o.tit||'',x0-60,24,{s:12.5,col:'--muted'});
+  T(ctx,(o.yl||'y')+' \\ '+(o.xl||'x'),x0-8,top-8,{s:12,a:'right',col:'--muted'});
+  let mx=0; P.forEach(r=>r.forEach(v=>{if(v>mx)mx=v;}));
+  xs.forEach((x,j)=>T(ctx,String(x),x0+j*cw+cw/2,top-8,{s:13,b:1,a:'center'}));
+  T(ctx,'p('+(o.yl||'y')+')',x0+nc*cw+cw/2+8,top-8,{s:12,a:'center',col:'--muted'});
+  ys.forEach((y,i)=>{
+    T(ctx,String(y),x0-12,top+i*ch+ch/2+5,{s:13,b:1,a:'right'});
+    let s=0;
+    xs.forEach((x,j)=>{ const v=P[i][j]; s+=v; const hl=o.hl?o.hl(x,y):false;
+      const X=x0+j*cw, Y=top+i*ch;
+      ctx.fillStyle=v>0?alpha(C(hl?'--warn':'--accent'),.12+.55*v/mx):C('--panel2');
+      RR(ctx,X+2,Y+2,cw-4,ch-4,6); ctx.fill();
+      if(hl){ ctx.strokeStyle=C('--warn'); ctx.lineWidth=2; ctx.stroke(); }
+      T(ctx,v>0?(o.lab?o.lab(v):fm(v,3)):'0',X+cw/2,Y+ch/2+(o.emp?0:5),{s:12.5,a:'center',col:v>0?'--ink':'--muted'});
+      if(o.emp) T(ctx,fm(o.emp[i][j],3),X+cw/2,Y+ch/2+15,{s:10.5,a:'center',col:'--accent2'});
+    });
+    T(ctx,o.lab?o.lab(s):fm(s,3),x0+nc*cw+cw/2+8,top+i*ch+ch/2+5,{s:12.5,a:'center',col:'--muted'});
+  });
+  const yb=top+nr*ch;
+  T(ctx,'p('+(o.xl||'x')+')',x0-12,yb+ch/2+5,{s:12,a:'right',col:'--muted'});
+  xs.forEach((x,j)=>{ let s=0; ys.forEach((y,i)=>s+=P[i][j]);
+    T(ctx,o.lab?o.lab(s):fm(s,3),x0+j*cw+cw/2,yb+ch/2+5,{s:12.5,a:'center',col:'--muted'}); });
+  if(o.emp) T(ctx,'en verde: frecuencias simuladas',x0,H-10,{s:11.5,col:'--accent2'});
+  return {x0,top,cw,ch,right:x0+(nc+1)*cw+16};
+}
+/* Barras comparadas: teórica (azul) vs simulada (verde). */
+function barras(ctx,W,H,labs,pt,pe,tit,hl,o){
+  o=o||{}; const L=o.L||56,R=o.R||20,Tp=38,B=46, n=labs.length, gw=(W-L-R)/n;
+  let mx=o.max||0; pt.forEach(v=>{if(v>mx)mx=v;}); if(pe) pe.forEach(v=>{if(v>mx)mx=v;}); mx=mx||1;
+  const y0=H-B, hh=y0-Tp;
+  for(let g=0;g<=4;g++){ const y=y0-hh*g/4; linea(ctx,L,y,W-R,y,'--line',.6); T(ctx,fm(mx*g/4,3),L-6,y+4,{s:10.5,a:'right',col:'--muted'}); }
+  T(ctx,tit||'',L,22,{s:12.5,col:'--muted'});
+  const bw=pe?gw*0.38:gw*0.7;
+  labs.forEach((lb,i)=>{ const x=L+i*gw+gw*0.12, on=hl?hl(i):false;
+    ctx.fillStyle=alpha(C(on?'--warn':'--accent'),.9); const h=hh*pt[i]/mx; RR(ctx,x,y0-h,bw,Math.max(1,h),3); ctx.fill();
+    if(pe){ ctx.fillStyle=alpha(C('--accent2'),.9); const h2=hh*pe[i]/mx; RR(ctx,x+bw+2,y0-h2,bw,Math.max(1,h2),3); ctx.fill(); }
+    if(n<=30) T(ctx,String(lb),L+i*gw+gw/2,y0+16,{s:n>20?10:12,a:'center',col:on?'--warn':'--ink'}); });
+  ctx.fillStyle=C('--accent'); RR(ctx,L,H-18,11,11,3); ctx.fill(); T(ctx,o.lt||'teórica',L+15,H-8,{s:11.5,col:'--muted'});
+  if(pe){ ctx.fillStyle=C('--accent2'); RR(ctx,L+100,H-18,11,11,3); ctx.fill(); T(ctx,o.le||'simulada',L+115,H-8,{s:11.5,col:'--muted'}); }
+}
+function duelo(ctx,W,H,a,b){
+  const m=Math.max(a.v,b.v)||1;
+  bar(ctx,70,110,W-160,30,a.v/m,a.col||'--accent',a.lab,a.txt);
+  bar(ctx,70,210,W-160,30,b.v/m,b.col||'--accent2',b.lab,b.txt);
+}
+
+const ENUN={
+"ej1": "Se toman dos cartas al azar, sin reposición, de una caja que contiene $5$ cartas numeradas $1,$ $1,$ $2,$ $2$ y $3$. Sean $X=$“suma de los números obtenidos”, $Y=$“mayor de los números obtenidos”.<br><b>(a)</b> Hallar la función de probabilidad conjunta de $X$ e $Y$, y las marginales.<br><b>(b)</b> Hallar $P(2X-Y\\geq 5)$ ; $P(X.Y\\leq 8)$.<br><b>(c)</b> Hallar la función de probabilidad de $X\\mid Y$.<br><b>(d)</b> Hallar la $cov(X,Y).$",
+"ej2": "Una caja contiene $4$ bolillas numeradas $1$, $2$, $3$ y $4$. Se extraen sucesivamente, sin reemplazo, $4$ bolillas. Sean $X=$“suma de los dos primeros números obtenidos”, $Y=$“máximo de los dos últimos nros. obtenidos” y $Z=$“suma de los dos últimos nros. obtenidos”.<br><b>(a)</b> Hallar la función de probabilidad conjunta de $X$ e $Y$, y las marginales.<br><b>(b)</b> Calcular la función de probabilidad de $X-Y$.<br><b>(c)</b> Hallar la función de probabilidad conjunta de $X$ y $Z$, y las marginales.<br><b>(d)</b> Hallar: $P(Z=10-X)$<br><b>(e)</b> Hallar la $cov(X,Y).$",
+"ej3": "Se distribuyen al azar $3$ bolillas distinguibles en $3$ urnas. Sean las v.a.: $X=$“número de urnas vacías”, $Y=$“número de bolillas en la primera urna” y $Z=$“número de bolillas en la segunda urna”. Hallar la función de probabilidad conjunta y las condicionales de:<br><b>(a)</b> $X$ e $Y$ , ¿son independientes?<br><b>(b)</b> $Y$ y $Z$ ¿son independientes?<br><b>(c)</b> Hallar $E(Y\\mid Z)$.",
+"ej4": "Dadas dos v.a. discretas $X$ e $Y$, probar que $E[E(X\\mid Y)]=E(X)$.",
+"ej5": "En una sucesión de $n$ ensayos de Bernoulli, sean $X_{n}$ el número total de éxitos y $X_{m}$ el número de éxitos en los primeros $m$ ensayos $(m<n)$.<br><b>(a)</b> Hallar la función de probabilidad condicional de $X_{n}$ dado $X_{m}=k$ (observar que $X_{m}$ y $X_{n}-X_{m}$ son independientes).<br><b>(b)</b> Hallar la función de probabilidad condicional de $X_{m}$ dado $X_{n}=h$. Interpretar el resultado.<br><b>(c)</b> En cierta región hay una probabilidad de $0.15$ (para cada individuo) de contraer cierta enfermedad. Un médico revisa $120$ personas.<br>&nbsp;&nbsp;<b>(i)</b> ¿Qué probabilidad tiene de encontrar $20$ enfermos habiendo ya detectado $12$ enfermos entre las primeras $65$ personas?<br>&nbsp;&nbsp;<b>(ii)</b> ¿Qué probabilidad hay de encontrar $10$ enfermos entre los primeros $60$ revisados, si en total hay $15$ enfermos?<br><b>(d)</b> Hallar la esperanza de $E(X_{n}^{2}\\mid X_{m})$.",
+"ej6": "Se extraen $r$ números (no necesariamente distintos) de $\\{1,2,…,n\\}$. Sea $X_{k}$ el $k-$ésimo número extraído $(k=1,…r)$. Sea $U=m\\acute{a}x\\{X_{1},…,X_{r}\\}$ y $V=m\\acute{\\imath}n\\{X_{1},…,X_{r}\\}$. Hallar las funciones de probabilidad de $U$ y de $V$.",
+"ej7": "Se arroja un dado normal $20$ veces. Llamemos $X$ y $Y$ al menor y al mayor de los números obtenidos respectivamente. Calcular la $P(X=2,Y=5)$. Indicación: considerar primero el evento $\\{X\\geq 2,Y\\leq 5\\}$.",
+"ej8": "Sean $X$ e $Y$ v.a. geométricas e independientes con parámetros $p_{1}$ y $p_{2}$ respectivamente.<br><b>(a)</b> Si $c$ es un entero positivo y $Z=m\\acute{\\imath}n\\{c,X\\}$, encontrar la $E(Z)$.<br><b>(b)</b> Encontrar la función de probabilidad y la esperanza del $m\\acute{\\imath}n\\{X,Y\\}$.",
+"ej9": "Se extraen al azar y sin reemplazo los $n$ números de $\\{1,…,n\\}$ (suponemos $n\\geq 3$). Sean:\\[ X_{k}=\\left\\{ \\begin{array}{cc} 1 & \\textit{si el }k-\\textit{ésimo número extraído es }k \\\\ 0 & cc\\end{array}\\right. \\] ¿Son las v.a. $X_{1},…,X_{n}$ independientes de a pares? ¿Son independientes? ¿Qué pasa si la extracción se hace con reemplazo?",
+"ej10": "Sea $X$ una v.a. simétricamente distribuida alrededor de su media $\\mu =0$ y con desviación stándard $\\sigma $. Sea $Y=a+bX+cX^{2}$, $a$, $b$ y $c$ constantes. Hallar el coeficiente de correlación $\\rho $ de $X$ e $Y$. Concluir que si $b$ es mucho mayor que $c$ en valor absoluto (es decir que la parte lineal es fuerte), entonces el valor absoluto de $\\rho $ está cerca de $1$. En cambio si $b$ es mucho menor que $c$, en valor absoluto, $\\left\\vert \\rho \\right\\vert $ está cerca de $0$. Asumir que $X$ poseé todos los momentos de orden menor o igual a $4$.",
+"ej11": "Un caminante aleatorio parte del $0$ y da $10$ pasos al azar moviéndose sobre los enteros.<br><b>(a)</b> Hallar el número esperado (y el desvío) de la cantidad de veces en la que da dos pasos consecutivos de sentido contrario.<br><b>(b)</b> Calcular el número esperado (y el desvío) del número de retornos a la posición inicial.",
+"ej12": "Dos partículas realizan caminos aleatorios simétricos simultáneos e independientes que comienzan en el origen. Demostrar que la probabilidad de que se encuentren en la misma posición tras $n$ pasos es:\\[ \\left( \\frac{1}{2}\\right) ^{2n}\\sum\\limits_{k=0}^{n}\\left( \\begin{array}{c} n \\\\ k\\end{array}\\right) ^{2} \\]<br>\\",
+"a1": "En una lata hay $12$ galletitas dulces y una salada. Repetidamente, se extrae una galletita al azar. Si la que sale es dulce, se la ingiere; y si no se la devuelve a la lata. Sean $X$ e $Y$ la cantidad de galletitas ingeridas hasta la primera extracción de la salada, y entre la primera y la segunda extracción de la salada. Calcular $E(Y/X)$ y $E(Y)$.",
+"a2": "Supongamos que $X$ e $Y$ son dos variables aleatorias que toman sólo valores $1$ y $0$. Mostrar que $cov(X,Y)=0$ implica que $X$ e $Y$ son independientes.",
+"a3": "De un mazo de baraja española se extraen repetidamente cartas con reposición. Sean $U$ y $V$ los números de las extracciones en que salen el primer oro y la primera copa. ¿Son variables independientes?.",
+"a4": "Se arroja un dado $238$ veces. Sean $X$ e $Y$ las cantidades de resultados pares e impares, respectivamente. Calcular mentalmente $\\rho _{XY}=\\frac{cov(X,Y)}{\\sigma _{X}\\sigma _{Y}}$",
+"a5": "Una partícula que sale del origen se desplaza sobre la recta una unidad a la derecha o a la izquierda con probabilidad $1/2$ cada vez, siendo independientes los sucesivos movimientos. Representemos por $Y_{n}$ su situación al cabo de $n$ movimientos. Hállense las siguientes probabilidades:<br><b>(a)</b> $P(Y_{n}\\geq 0$ para $1\\leq n\\leq 4)$;<br><b>(b)</b> $P(\\left\\vert Y_{n}\\right\\vert \\leq 2$ para $1\\leq n\\leq 4)$;<br><b>(c)</b> $P(Y_{n}\\geq 0$ para $1\\leq n\\leq 4\\mid Y_{4}=0)$;<br><b>(d)</b> Pobar que $P(Y_{10}=6\\mid Y_{4}=2,$ $Y_{6}=4)=P(Y_{10}=6\\mid Y_{6}=4)=P(Y_{4}=2)$;"
+};
+
+/* ══════ DATOS DE LA PRÁCTICA 6 ══════ */
+function simPares(R,N){ // ej1: pares sin reposición de {1,1,2,2,3}
+  const c=[1,1,2,2,3], cnt={};
+  for(let t=0;t<N;t++){ const i=Math.floor(R()*5); let j=Math.floor(R()*4); if(j>=i) j++;
+    const a=c[i],b=c[j], k=(a+b)+','+Math.max(a,b); cnt[k]=(cnt[k]||0)+1; }
+  return cnt;
+}
+function perm4(R){ const a=[1,2,3,4]; for(let i=3;i>0;i--){ const j=Math.floor(R()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function caminata(R,n){ const s=[0]; for(let i=0;i<n;i++) s.push(s[i]+(R()<.5?-1:1)); return s; }
+function dibCaminata(ctx,m,s,col,lw){ ctx.strokeStyle=C(col); ctx.lineWidth=lw||2; ctx.beginPath();
+  s.forEach((v,i)=>{ i?ctx.lineTo(m.X(i),m.Y(v)):ctx.moveTo(m.X(i),m.Y(v)); }); ctx.stroke(); }
+
+const EJERCICIOS = [
+/* ─────────────── BLOQUE 1: conjuntas discretas ─────────────── */
+{
+  id:"ej1", g:"Conjuntas discretas (1–3)", titulo:"1. Dos cartas: suma y máximo",
+  tema:"conjunta · marginales · condicional · covarianza",
+  enunciado:ENUN.ej1,
+  resultado:"(a) $P(2,1)=\\tfrac1{10}$, $P(3,2)=\\tfrac4{10}$, $P(4,2)=\\tfrac1{10}$, $P(4,3)=P(5,3)=\\tfrac2{10}$. (b) $P(2X-Y\\ge5)=\\tfrac12$; $P(XY\\le8)=\\tfrac35$. (c) $X\\mid Y=2$: $3$ con prob. $\\tfrac45$, $4$ con prob. $\\tfrac15$; $X\\mid Y=3$: $4$ o $5$ con prob. $\\tfrac12$. (d) $cov(X,Y)=\\tfrac{13}{25}=0{,}52$.",
+  pasos:[
+    {t:"Espacio muestral", h:"$\\binom52=10$ pares equiprobables de cartas (las dos cartas con $1$ son físicamente distintas). El par $\\{1,2\\}$ aparece de $2\\cdot2=4$ maneras."},
+    {t:"La tabla conjunta", h:"Para cada par se anotan $(X,Y)=(\\text{suma},\\max)$ y se divide por $10$. Las marginales son las sumas por fila y por columna."},
+    {t:"Eventos sobre la tabla", h:"Un evento sobre $(X,Y)$ es un conjunto de celdas: $2X-Y\\ge5$ son $(4,2),(4,3),(5,3)$, con probabilidad $\\tfrac12$; $XY\\le8$ son $(2,1),(3,2),(4,2)$, con $\\tfrac35$."},
+    {t:"Condicional = una fila renormalizada", h:"$P(X=x\\mid Y=y)=p(x,y)/p_Y(y)$: se toma la fila de $y$ y se divide por su total."},
+    {t:"Covarianza", h:"$E(X)=\\tfrac{18}5$, $E(Y)=\\tfrac{23}{10}$, $E(XY)=\\tfrac{88}{10}$; $cov=\\tfrac{88}{10}-\\tfrac{18}5\\cdot\\tfrac{23}{10}=\\tfrac{13}{25}>0$."}
+  ],
+  sim:{
+    controles:[ {id:"ev", tipo:"select", label:"Resaltar", opts:["nada","2X − Y ≥ 5","X·Y ≤ 8","fila Y = 2 (condicional)"], val:0} ],
+    acciones:[ {label:"Simular 5 000 extracciones", fn:(st,rep)=>{ st.R=st.R||LCG(11); st.cnt=simPares(st.R,5000); st.N=5000; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const xs=[2,3,4,5], ys=[1,2,3];
+      const P=[[.1,0,0,0],[0,.4,.1,0],[0,0,.2,.2]];
+      const f=[(x,y)=>false,(x,y)=>2*x-y>=5,(x,y)=>x*y<=8,(x,y)=>y===2][p.ev];
+      let emp=null; if(st.cnt){ emp=ys.map(y=>xs.map(x=>(st.cnt[x+','+y]||0)/st.N)); }
+      tablaConj(ctx,W,H,xs,ys,P,{tit:'Conjunta de (X, Y) = (suma, máximo); en naranja, las celdas del evento',xl:'x',yl:'y',hl:f,emp:emp,x0:130});
+      let s=0; ys.forEach((y,i)=>xs.forEach((x,j)=>{ if(f(x,y)) s+=P[i][j]; }));
+      const r={"P(celdas resaltadas)":fm(s,2),"cov(X,Y)":"0,52"};
+      if(p.ev===3) r["X | Y=2"]="3 → 0,8 ; 4 → 0,2";
+      if(emp){ let se=0; ys.forEach((y,i)=>xs.forEach((x,j)=>{ if(f(x,y)) se+=emp[i][j]; })); r["simulada"]=fm(se,3); }
+      return r;
+    }
+  }
+},
+{
+  id:"ej2", g:"Conjuntas discretas (1–3)", titulo:"2. Cuatro bolillas sin reemplazo",
+  tema:"conjunta · función de v.a. · dependencia total",
+  enunciado:ENUN.ej2,
+  resultado:"(a) $P(X,Y)=\\tfrac16$ en $(3,4),(4,4),(5,3),(5,4),(6,3),(7,2)$. (b) $X-Y$ uniforme en $\\{-1,0,1,2,3,5\\}$. (c) $Z=10-X$. (d) $P(Z=10-X)=1$. (e) $cov(X,Y)=-\\tfrac56$.",
+  pasos:[
+    {t:"Reducir el espacio", h:"Las $24$ permutaciones son equiprobables, pero sólo importa qué par sale primero: $\\binom42=6$ casos, cada uno con probabilidad $\\tfrac16$."},
+    {t:"Tabla de casos", h:"Para cada par inicial $\\{b_1,b_2\\}$ el par final es su complemento: de ahí salen $X$, $Y$, $Z$ y $X-Y$."},
+    {t:"La observación clave", h:"$X+Z=1+2+3+4=10$ siempre: $Z$ es función de $X$ y la conjunta de $(X,Z)$ vive sobre la recta $z=10-x$."},
+    {t:"Covarianza", h:"$E(X)=5$, $E(Y)=\\tfrac{10}3$, $E(XY)=\\tfrac{95}6$ ⇒ $cov(X,Y)=-\\tfrac56$: si las primeras suman mucho, las grandes ya salieron."}
+  ],
+  sim:{
+    controles:[ {id:"par", tipo:"select", label:"Conjunta de", opts:["(X, Y)","(X, Z)"], val:0} ],
+    acciones:[ {label:"Simular 3 000 extracciones", fn:(st,rep)=>{ const R=LCG(21); st.c={}; st.N=3000;
+      for(let t=0;t<3000;t++){ const b=perm4(R), X=b[0]+b[1], Y=Math.max(b[2],b[3]), Z=b[2]+b[3];
+        st.c['y'+X+','+Y]=(st.c['y'+X+','+Y]||0)+1; st.c['z'+X+','+Z]=(st.c['z'+X+','+Z]||0)+1; } rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const xs=[3,4,5,6,7];
+      if(p.par===0){
+        const ys=[2,3,4], P=[[0,0,0,0,1/6],[0,0,1/6,1/6,0],[1/6,1/6,1/6,0,0]];
+        const emp=st.c?ys.map(y=>xs.map(x=>(st.c['y'+x+','+y]||0)/st.N)):null;
+        tablaConj(ctx,W,H,xs,ys,P,{tit:'Conjunta de (X, Y): X = suma de las dos primeras, Y = máximo de las dos últimas',xl:'x',yl:'y',emp:emp,x0:130});
+        return {"E(X)":"5","E(Y)":"10/3","cov(X,Y)":"−5/6 ≈ −0,833"};
+      }
+      const zs=[3,4,5,6,7], P=zs.map(z=>xs.map(x=>x+z===10?(x===5?1/3:1/6):0));
+      const emp=st.c?zs.map(z=>xs.map(x=>(st.c['z'+x+','+z]||0)/st.N)):null;
+      tablaConj(ctx,W,H,xs,zs,P,{tit:'Conjunta de (X, Z): toda la masa está sobre la diagonal z = 10 − x',xl:'x',yl:'z',hl:(x,z)=>x+z===10,emp:emp,x0:130});
+      return {"P(Z = 10 − X)":"1","ρ(X,Z)":"−1"};
+    }
+  }
+},
+{
+  id:"ej3", g:"Conjuntas discretas (1–3)", titulo:"3. Tres bolillas en tres urnas",
+  tema:"multinomial · condicionales · E(Y | Z)",
+  enunciado:ENUN.ej3,
+  resultado:"(a) $X$ e $Y$ no son independientes ($P(X=0,Y=0)=0$). (b) $Y,Z$ no son independientes; $Y\\mid Z=z\\sim Bin(3-z,\\tfrac12)$. (c) $E(Y\\mid Z)=\\dfrac{3-Z}{2}$.",
+  pasos:[
+    {t:"Modelo", h:"$3^3=27$ asignaciones equiprobables; $Y,Z\\sim Bin(3,\\tfrac13)$. Para $X$: $6$ casos sin urnas vacías, $3$ con dos vacías y $18$ con una."},
+    {t:"Una celda alcanza", h:"Si $X=0$ (ninguna vacía) cada urna tiene una bolilla, así que $Y=1$: $P(X=0,Y=0)=0\\neq P(X=0)P(Y=0)$."},
+    {t:"(Y, Z) es multinomial", h:"$P(Y=y,Z=z)=\\dfrac{3!}{y!z!(3-y-z)!}\\dfrac1{27}$. $P(Y=3,Z=3)=0$: tampoco son independientes."},
+    {t:"Condicional", h:"Dado $Z=z$ quedan $3-z$ bolillas que eligen entre las urnas 1 y 3: $Y\\mid Z=z\\sim Bin(3-z,\\tfrac12)$."},
+    {t:"Esperanza condicional", h:"$E(Y\\mid Z)=\\tfrac{3-Z}2$, una recta decreciente en $Z$. Su promedio es $\\tfrac{3-1}2=1=E(Y)$."}
+  ],
+  sim:{
+    controles:[ {id:"z", label:"Valor observado de Z", min:0, max:3, step:1, val:1} ],
+    draw:function(ctx,W,H,p){
+      const z=p.z, n=3-z, labs=[0,1,2,3], pc=labs.map(y=>y<=n?binom(y,n,.5):0), pm=labs.map(y=>binom(y,3,1/3));
+      barras(ctx,W*0.62,H,labs,pc,pm,'Distribución de Y: condicional a Z = '+z+' (azul) y marginal (verde)',null,{lt:'Y | Z = '+z,le:'Y sola'});
+      const L=W*0.66, m=ejes(ctx,W,H,0,3,0,1.6,{L:L+30,T:40,nx:3,ny:4,dx:0,dy:1,tit:'E(Y | Z = z) = (3 − z)/2'});
+      [0,1,2,3].forEach(zz=>punto(ctx,m.X(zz),m.Y((3-zz)/2),zz===z?7:4,zz===z?'--warn':'--accent'));
+      linea(ctx,m.X(0),m.Y(1.5),m.X(3),m.Y(0),'--accent',1.5,[4,4]);
+      return {["E(Y | Z = "+z+")"]:fm((3-z)/2,2),"E(Y)":"1",["P(Z = "+z+")"]:fm(binom(z,3,1/3),4)};
+    }
+  }
+},
+/* ─────────────── BLOQUE 2: esperanza condicional ─────────────── */
+{
+  id:"ej4", g:"Esperanza condicional (4–5)", titulo:"4. La ley de la esperanza total",
+  tema:"demostración · E[E(X | Y)] = E(X)",
+  enunciado:ENUN.ej4,
+  resultado:"Demostración: $E[E(X\\mid Y)]=\\sum_y\\sum_x x\\,p(x,y)=\\sum_x x\\,p_X(x)=E(X)$ (vale si $E|X|<\\infty$).",
+  pasos:[
+    {t:"E(X | Y) es una variable", h:"Es $h(Y)$ con $h(y)=\\sum_x x\\,P(X=x\\mid Y=y)$: toma un valor por cada $y$."},
+    {t:"Promediarla", h:"$E[h(Y)]=\\sum_y h(y)p_Y(y)=\\sum_y\\sum_x x\\,\\dfrac{p(x,y)}{p_Y(y)}\\,p_Y(y)$: el $p_Y(y)$ se cancela."},
+    {t:"Cambiar el orden", h:"$\\sum_x x\\sum_y p(x,y)=\\sum_x x\\,p_X(x)=E(X)$. El intercambio es legítimo porque la serie doble converge absolutamente."},
+    {t:"Para qué sirve", h:"Calcular $E(X)$ por casos: condicionar a lo que simplifica y después promediar con los pesos $p_Y$."}
+  ],
+  sim:{
+    controles:[ {id:"y", tipo:"select", label:"Mirar el caso", opts:["Y = 1","Y = 2","Y = 3"], val:1} ],
+    draw:function(ctx,W,H,p){
+      // datos del ejercicio 1
+      const ys=[1,2,3], py=[.1,.5,.4], h=[2,3.2,4.5];
+      const m=ejes(ctx,W,H,0.5,3.5,0,5.5,{nx:3,ny:5,dx:1,dy:0,tit:'Datos del ejercicio 1: E(X | Y = y) (barras) y su promedio ponderado por p_Y (línea)'});
+      ys.forEach((y,i)=>{ const x=m.X(y), w=(m.X(1.4)-m.X(1))*py[i]/0.5*0.9+18;
+        ctx.fillStyle=alpha(C(i===p.y?'--warn':'--accent'),.75); RR(ctx,x-w/2,m.Y(h[i]),w,m.Y(0)-m.Y(h[i]),5); ctx.fill();
+        T(ctx,'E(X|Y='+y+') = '+fm(h[i],1),x,m.Y(h[i])-8,{s:12,a:'center',b:i===p.y});
+        T(ctx,'peso p_Y = '+fm(py[i],1),x,m.Y(0)-10,{s:11.5,a:'center',col:'--ink'}); });
+      linea(ctx,m.X(0.5),m.Y(3.6),m.X(3.5),m.Y(3.6),'--accent2',2.2,[6,4]);
+      T(ctx,'E(X) = 0,1·2 + 0,5·3,2 + 0,4·4,5 = 3,6',m.X(3.45),m.Y(3.6)-8,{s:12.5,a:'right',col:'--accent2',b:1});
+      return {"Σ h(y) p_Y(y)":"3,6","E(X) directa":"18/5 = 3,6"};
+    }
+  }
+},
+{
+  id:"ej5", g:"Esperanza condicional (4–5)", titulo:"5. Bernoulli: éxitos tempranos y totales",
+  tema:"binomial condicional · hipergeométrica",
+  enunciado:ENUN.ej5,
+  resultado:"(a) $X_n\\mid X_m=k\\sim k+Bin(n-m,p)$. (b) $P(X_m=k\\mid X_n=h)=\\binom mk\\binom{n-m}{h-k}/\\binom nh$ (hipergeométrica, no depende de $p$). (c) (i) $\\binom{55}8 0{,}15^8 0{,}85^{47}\\approx0{,}1503$; (ii) $\\binom{60}{10}\\binom{60}5/\\binom{120}{15}\\approx0{,}0870$. (d) $E(X_n^2\\mid X_m)=(X_m+(n-m)p)^2+(n-m)p(1-p)$; su esperanza es $np(1-p)+n^2p^2$.",
+  pasos:[
+    {t:"Separar en bloques", h:"$X_n=X_m+(X_n-X_m)$ con $X_m\\sim Bin(m,p)$ y $X_n-X_m\\sim Bin(n-m,p)$ independientes: dependen de ensayos distintos."},
+    {t:"Condicionar al pasado", h:"Dado $X_m=k$, lo que falta es una binomial nueva: $X_n\\mid X_m=k\\sim k+Bin(n-m,p)$."},
+    {t:"Condicionar al total", h:"Bayes: $\\dfrac{\\binom mk p^kq^{m-k}\\binom{n-m}{h-k}p^{h-k}q^{\\cdots}}{\\binom nh p^hq^{n-h}}$; todas las potencias de $p$ y $q$ se cancelan."},
+    {t:"Leer la hipergeométrica", h:"Sabiendo que hubo $h$ éxitos, sus posiciones son $h$ lugares al azar entre $n$. Por eso $p$ desaparece."},
+    {t:"Los números", h:"(i) faltan $8$ enfermos entre $55$: $0{,}1503$. (ii) $10$ de los $15$ enfermos entre los primeros $60$ de $120$: $0{,}0870$."}
+  ],
+  sim:{
+    controles:[
+      {id:"n", label:"n (total)", min:10, max:120, step:1, val:120},
+      {id:"m", label:"m (primeros)", min:1, max:119, step:1, val:60},
+      {id:"h", label:"h (éxitos totales)", min:0, max:40, step:1, val:15},
+      {id:"p", label:"p (×100)", min:1, max:99, step:1, val:15}
+    ],
+    draw:function(ctx,W,H,q){
+      const n=q.n, m=Math.min(q.m,n-1), h=Math.min(q.h,n), p=q.p/100;
+      const K=Math.min(m,h), labs=[], hy=[], bi=[];
+      for(let k=0;k<=K;k++){ labs.push(k); hy.push(combi(m,k)*combi(n-m,h-k)/combi(n,h)); bi.push(binom(k,m,p)); }
+      barras(ctx,W,H,labs,hy,bi,'Distribución de X_m: dado X_n = '+h+' (azul, no depende de p) y sin condicionar, Bin(m,p) (verde)',k=>k===10&&n===120&&m===60&&h===15,{lt:'X_m | X_n = h',le:'Bin(m, p)'});
+      return {"E(X_m | X_n = h) = hm/n":fm(h*m/n,2),"E(X_m) = mp":fm(m*p,2),"P(X_m = 10 | X_n = 15)":(n===120&&m===60&&h===15)?"0,0870":"—"};
+    }
+  }
+},
+/* ─────────────── BLOQUE 3: máximos, mínimos, geométricas ─────────────── */
+{
+  id:"ej6", g:"Máximos y mínimos (6–8)", titulo:"6. Máximo y mínimo de r extracciones",
+  tema:"acumulada del máximo · cola del mínimo",
+  enunciado:ENUN.ej6,
+  resultado:"$P(U=k)=\\dfrac{k^r-(k-1)^r}{n^r}$, $\\;P(V=k)=\\dfrac{(n-k+1)^r-(n-k)^r}{n^r}$, $k=1,\\dots,n$.",
+  pasos:[
+    {t:"No contar “= k” directamente", h:"El evento $\\{U\\le k\\}$ = “todas las extracciones $\\le k$” factoriza por independencia."},
+    {t:"Acumulada del máximo", h:"$P(U\\le k)=(k/n)^r$, y $P(U=k)=P(U\\le k)-P(U\\le k-1)$."},
+    {t:"Cola del mínimo", h:"$P(V\\ge k)=\\left(\\frac{n-k+1}{n}\\right)^r$, y $P(V=k)=P(V\\ge k)-P(V\\ge k+1)$."},
+    {t:"Simetría", h:"$V$ tiene la ley de $n+1-U$: las dos distribuciones son espejo una de la otra."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"n", min:2, max:20, step:1, val:10}, {id:"r", label:"r (extracciones)", min:1, max:15, step:1, val:3} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, r=p.r, labs=[], pu=[], pv=[];
+      for(let k=1;k<=n;k++){ labs.push(k); pu.push((Math.pow(k,r)-Math.pow(k-1,r))/Math.pow(n,r)); pv.push((Math.pow(n-k+1,r)-Math.pow(n-k,r))/Math.pow(n,r)); }
+      barras(ctx,W,H,labs,pu,pv,'P(U = k) máximo (azul) y P(V = k) mínimo (verde), n = '+n+', r = '+r,null,{lt:'máximo U',le:'mínimo V'});
+      let eu=0; pu.forEach((v,i)=>eu+=v*(i+1));
+      return {"E(U)":fm(eu,3),"E(V) = n+1−E(U)":fm(n+1-eu,3)};
+    }
+  }
+},
+{
+  id:"ej7", g:"Máximos y mínimos (6–8)", titulo:"7. Un dado 20 veces: mínimo 2 y máximo 5",
+  tema:"inclusión-exclusión con máximo y mínimo",
+  enunciado:ENUN.ej7,
+  resultado:"$P(X=2,Y=5)=\\dfrac{4^{20}-2\\cdot3^{20}+2^{20}}{6^{20}}\\approx2{,}988\\times10^{-4}$.",
+  pasos:[
+    {t:"La indicación", h:"$\\{X\\ge2,Y\\le5\\}$ = todas las tiradas en $\\{2,3,4,5\\}$: probabilidad $(4/6)^{20}$."},
+    {t:"Sacar lo que sobra", h:"Hay que quitar “ninguna es 2” $\\{X\\ge3,Y\\le5\\}$ y “ninguna es 5” $\\{X\\ge2,Y\\le4\\}$, cada uno $(3/6)^{20}$."},
+    {t:"Devolver la intersección", h:"Se restó dos veces “todas en $\\{3,4\\}$”, de probabilidad $(2/6)^{20}$: se suma una vez."},
+    {t:"Resultado", h:"$\\dfrac{4^{20}-2\\cdot3^{20}+2^{20}}{6^{20}}\\approx0{,}000299$. Lo raro no es ver el 2 y el 5, sino no ver ni 1 ni 6."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"Tiradas", min:2, max:30, step:1, val:20} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, P=[], v=[1,2,3,4,5,6];
+      const g=(a,b)=>b<a?0:Math.pow((b-a+1)/6,n);
+      v.forEach(y=>{ const row=[]; v.forEach(x=>{ row.push(y<x?0:(x===y?Math.pow(1/6,n):g(x,y)-g(x+1,y)-g(x,y-1)+g(x+1,y-1))); }); P.push(row); });
+      tablaConj(ctx,W,H,v,v,P,{tit:'P(mínimo = x, máximo = y) con '+n+' tiradas (escala de color relativa)',xl:'mín',yl:'máx',hl:(x,y)=>x===2&&y===5,lab:u=>u<1e-3&&u>0?u.toExponential(1).replace('.',','):fm(u,3),cw:80,x0:150});
+      return {"P(X=2, Y=5)":P[4][1].toExponential(3).replace('.',','),"P(X=1, Y=6)":fm(P[5][0],4)};
+    }
+  }
+},
+{
+  id:"ej8", g:"Máximos y mínimos (6–8)", titulo:"8. Mínimos de geométricas",
+  tema:"cola de la geométrica · E(Z) = Σ P(Z > k)",
+  enunciado:ENUN.ej8,
+  resultado:"(a) $E(\\min\\{c,X\\})=\\dfrac{1-(1-p_1)^c}{p_1}$. (b) $\\min\\{X,Y\\}\\sim Geom(1-q_1q_2)$, $E=\\dfrac{1}{p_1+p_2-p_1p_2}$ (geométrica = número de ensayos hasta el primer éxito).",
+  pasos:[
+    {t:"La cola", h:"Con $X$ = ensayos hasta el primer éxito, $P(X>k)=q_1^k$. Todo el ejercicio sale de ahí."},
+    {t:"Esperanza por colas", h:"Para valores en $\\{0,1,\\dots\\}$, $E(Z)=\\sum_{k\\ge0}P(Z>k)$. Con $Z=\\min\\{c,X\\}$ la suma se corta en $c-1$: $\\sum_{k<c}q_1^k$."},
+    {t:"Mínimo de independientes", h:"$P(\\min>k)=P(X>k)P(Y>k)=(q_1q_2)^k$: es la cola de una geométrica de parámetro $1-q_1q_2$."},
+    {t:"Interpretación", h:"Dos experimentos en paralelo = uno solo cuyo éxito es “al menos uno tuvo éxito”."}
+  ],
+  sim:{
+    controles:[ {id:"p1", label:"p₁ (×100)", min:5, max:90, step:1, val:30}, {id:"p2", label:"p₂ (×100)", min:5, max:90, step:1, val:20}, {id:"c", label:"c", min:1, max:15, step:1, val:4} ],
+    acciones:[ {label:"Simular 4 000 pares", fn:(st,rep)=>{ st.go=1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const p1=p.p1/100, p2=p.p2/100, q=(1-p1)*(1-p2), K=12, labs=[], pt=[];
+      for(let k=1;k<=K;k++){ labs.push(k); pt.push(Math.pow(q,k-1)*(1-q)); }
+      let pe=null, mz=0;
+      if(st.go){ const R=LCG(7), cnt=new Array(K).fill(0), N=4000; let sz=0;
+        const geo=pp=>{let k=1; while(R()>pp) k++; return k;};
+        for(let t=0;t<N;t++){ const x=geo(p1), y=geo(p2), mm=Math.min(x,y); if(mm<=K) cnt[mm-1]++; sz+=Math.min(p.c,x); }
+        pe=cnt.map(v=>v/N); mz=sz/N; }
+      barras(ctx,W,H,labs,pt,pe,'min{X, Y}: geométrica de parámetro 1 − q₁q₂ = '+fm(1-q,3),null);
+      const r={"E(min{X,Y})":fm(1/(1-q),3),"E(min{c,X})":fm((1-Math.pow(1-p1,p.c))/p1,3)};
+      if(st.go) r["E(min{c,X}) simulada"]=fm(mz,3);
+      return r;
+    }
+  }
+},
+/* ─────────────── BLOQUE 4: independencia y correlación ─────────────── */
+{
+  id:"ej9", g:"Independencia y correlación (9–10)", titulo:"9. Coincidencias: ¿independientes de a pares?",
+  tema:"indicadores · independencia de a pares",
+  enunciado:ENUN.ej9,
+  resultado:"Sin reemplazo: no son independientes de a pares ($P(X_j=X_k=1)=\\tfrac1{n(n-1)}\\neq\\tfrac1{n^2}$), ni independientes. Con reemplazo: independientes, cada una Bernoulli$(\\tfrac1n)$.",
+  pasos:[
+    {t:"Marginal", h:"$P(X_k=1)=\\tfrac{(n-1)!}{n!}=\\tfrac1n$: el número $k$ tiene la misma chance de caer en cualquier lugar."},
+    {t:"Un par", h:"$P(X_j=1,X_k=1)=\\tfrac{(n-2)!}{n!}=\\tfrac1{n(n-1)}$, que es mayor que $\\tfrac1{n^2}$."},
+    {t:"Conclusión", h:"Falla la independencia de a pares; como la independencia exige más, tampoco hay independencia."},
+    {t:"Con reemplazo", h:"Cada $X_k$ depende sólo de la extracción $k$, y las extracciones son independientes."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"n", min:3, max:12, step:1, val:4}, {id:"rep", tipo:"select", label:"Extracción", opts:["sin reemplazo","con reemplazo"], val:0} ],
+    acciones:[ {label:"Simular 20 000 extracciones", fn:(st,rep)=>{ st.go=(st.go||0)+1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const n=p.n, sin=p.rep===0, joint=sin?1/(n*(n-1)):1/(n*n), prod=1/(n*n);
+      let emp=null;
+      if(st.go){ const R=LCG(100+st.go), N=20000; let c=0;
+        for(let t=0;t<N;t++){ let a,b;
+          if(sin){ a=Math.floor(R()*n); b=Math.floor(R()*(n-1)); if(b>=a) b++; } else { a=Math.floor(R()*n); b=Math.floor(R()*n); }
+          if(a===0&&b===1) c++; } emp=c/N; }
+      duelo(ctx,W,H,{v:joint,lab:'P(X₁ = 1, X₂ = 1)',txt:fm(joint,4)+(emp!==null?'   (simulada '+fm(emp,4)+')':''),col:'--accent'},
+                    {v:prod,lab:'P(X₁ = 1)·P(X₂ = 1)',txt:fm(prod,4),col:'--accent2'});
+      T(ctx,sin?'Sin reemplazo las barras difieren: los X_k no son independientes de a pares.':'Con reemplazo coinciden: independencia.',70,300,{s:13.5,col:sin?'--bad':'--accent2',b:1});
+      return {"1/(n(n−1))":fm(1/(n*(n-1)),4),"1/n²":fm(1/(n*n),4)};
+    }
+  }
+},
+{
+  id:"ej10", g:"Independencia y correlación (9–10)", titulo:"10. Correlación de X con a + bX + cX²",
+  tema:"coeficiente de correlación · parte lineal",
+  enunciado:ENUN.ej10,
+  resultado:"$\\rho=\\dfrac{b\\,\\sigma}{\\sqrt{b^2\\sigma^2+c^2(\\mu_4-\\sigma^4)}}$ con $\\mu_4=E(X^4)$; $|\\rho|\\to1$ si $|b|\\gg|c|$ y $|\\rho|\\to0$ si $|b|\\ll|c|$.",
+  pasos:[
+    {t:"Momentos impares nulos", h:"Por simetría $X$ y $-X$ tienen la misma ley: $E(X)=E(X^3)=0$."},
+    {t:"Covarianza", h:"$cov(X,Y)=b\\,\\sigma^2+c\\,E(X^3)=b\\sigma^2$: la parte cuadrática no covaría con $X$."},
+    {t:"Varianza de Y", h:"$Var(Y)=b^2\\sigma^2+c^2(\\mu_4-\\sigma^4)$, porque $cov(X,X^2)=E(X^3)=0$."},
+    {t:"Correlación", h:"$\\rho=\\dfrac{b\\sigma^2}{\\sigma\\sqrt{b^2\\sigma^2+c^2(\\mu_4-\\sigma^4)}}$."},
+    {t:"Lo que se lleva", h:"Con $b=0$, $Y$ es función de $X$ y aun así $\\rho=0$: la correlación sólo ve la parte lineal."}
+  ],
+  sim:{
+    controles:[ {id:"b", label:"b (×10)", min:-30, max:30, step:1, val:10}, {id:"c", label:"c (×10)", min:-30, max:30, step:1, val:5} ],
+    draw:function(ctx,W,H,p){
+      const b=p.b/10, c=p.c/10, R=LCG(5), pts=[];
+      for(let i=0;i<700;i++){ const x=gauss(R); pts.push([x,b*x+c*x*x]); }
+      const s=1, mu4=3, rho=(b===0&&c===0)?NaN:b*s/Math.sqrt(b*b+c*c*(mu4-1));
+      let ym=Math.max(1,...pts.map(q=>Math.abs(q[1]))); ym=Math.min(ym,20);
+      const m=ejes(ctx,W,H,-3.2,3.2,-ym,ym,{nx:8,ny:4,dx:1,dy:1,tit:'X ~ Normal(0,1) (simétrica), Y = bX + cX²  (a = 0 sólo traslada)'});
+      nube(ctx,m,pts.filter(q=>Math.abs(q[1])<=ym),null,1.6);
+      if(isFinite(rho)){ const bb=rho*Math.sqrt(b*b+2*c*c); linea(ctx,m.X(-3.2),m.Y(Math.max(-ym,Math.min(ym,-3.2*bb+c))),m.X(3.2),m.Y(Math.max(-ym,Math.min(ym,3.2*bb+c))),'--warn',2); }
+      return {"ρ (fórmula, μ₄ = 3)":isFinite(rho)?fm(rho,3):'—',"|b|/|c|":c===0?'∞':fm(Math.abs(b/c),2)};
+    }
+  }
+},
+/* ─────────────── BLOQUE 5: caminata aleatoria ─────────────── */
+{
+  id:"ej11", g:"Caminata aleatoria (11–12)", titulo:"11. Diez pasos: cambios de sentido y retornos",
+  tema:"indicadores · linealidad · covarianzas",
+  enunciado:ENUN.ej11,
+  resultado:"(a) $Bin(9,\\tfrac12)$: media $4{,}5$, desvío $1{,}5$. (b) Retornos al origen: media $\\tfrac{437}{256}\\approx1{,}707$, desvío $\\approx1{,}402$.",
+  pasos:[
+    {t:"Indicadores de cambio", h:"$I_j=1$ si el paso $j+1$ tiene sentido contrario al $j$. $P(I_j=1)=\\tfrac12$ y los nueve $I_j$ son independientes: $N\\sim Bin(9,\\tfrac12)$."},
+    {t:"Retornos", h:"$R=\\sum_k\\mathbf 1\\{S_k=0\\}$ y sólo cuentan tiempos pares: $u_{2j}=\\binom{2j}{j}2^{-2j}$."},
+    {t:"Media", h:"$E(R)=\\tfrac12+\\tfrac38+\\tfrac5{16}+\\tfrac{35}{128}+\\tfrac{63}{256}=\\tfrac{437}{256}$."},
+    {t:"Desvío", h:"Los retornos no son independientes: $P(S_{2i}=0,S_{2j}=0)=u_{2i}u_{2j-2i}$. Con esas covarianzas, $Var(R)\\approx1{,}965$."},
+    {t:"Lectura", h:"El desvío es del orden de la media: no volver nunca ($\\approx0{,}246$) y volver varias veces son ambos frecuentes."}
+  ],
+  sim:{
+    controles:[ {id:"que", tipo:"select", label:"Contar", opts:["cambios de sentido","retornos al 0"], val:1} ],
+    acciones:[ {label:"Nueva caminata", fn:(st,rep)=>{ st.k=(st.k||0)+1; rep(); }}, {label:"Simular 10 000", fn:(st,rep)=>{ st.mc=1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const R=LCG(33+(st.k||0)), s=caminata(R,10);
+      const m=ejes(ctx,W*0.46,H,0,10,-6,6,{nx:10,ny:6,dx:0,dy:0,tit:'Una caminata de 10 pasos'});
+      linea(ctx,m.X(0),m.Y(0),m.X(10),m.Y(0),'--muted',1,[3,3]); dibCaminata(ctx,m,s,'--accent',2.2);
+      let cam=0, ret=0; for(let i=1;i<=10;i++){ if(s[i]===0){ret++; punto(ctx,m.X(i),m.Y(0),6,'--warn');} if(i<10&&(s[i]-s[i-1])!==(s[i+1]-s[i])) cam++; }
+      // distribución exacta por enumeración
+      const K=p.que===0?9:5, pt=new Array(K+1).fill(0);
+      for(let w=0;w<1024;w++){ let x=0,prev=0,c=0,r=0; for(let i=0;i<10;i++){ const st2=(w>>i)&1?1:-1; if(i>0&&st2!==prev) c++; prev=st2; x+=st2; if(x===0) r++; } pt[p.que===0?c:r]+=1/1024; }
+      let pe=null; if(st.mc){ const R2=LCG(9), cnt=new Array(K+1).fill(0); for(let t=0;t<10000;t++){ const z=caminata(R2,10); let c=0,r=0; for(let i=1;i<=10;i++){ if(z[i]===0) r++; if(i<10&&(z[i]-z[i-1])!==(z[i+1]-z[i])) c++; } cnt[p.que===0?c:r]++; } pe=cnt.map(v=>v/10000); }
+      ctx.save(); ctx.translate(W*0.5,0);
+      barras(ctx,W*0.5,H,pt.map((_,i)=>i),pt,pe,p.que===0?'Cambios de sentido: Bin(9, 1/2)':'Retornos al origen en 10 pasos',null,{lt:'exacta'});
+      ctx.restore();
+      return p.que===0?{"en esta caminata":cam,"E":"4,5","desvío":"1,5"}:{"en esta caminata":ret,"E":"1,707","desvío":"1,402"};
+    }
+  }
+},
+{
+  id:"ej12", g:"Caminata aleatoria (11–12)", titulo:"12. Dos partículas que se encuentran",
+  tema:"independencia · Vandermonde",
+  enunciado:ENUN.ej12,
+  resultado:"$P(S_n=S'_n)=\\sum_k P(A=k)^2=\\left(\\tfrac12\\right)^{2n}\\sum_{k=0}^n\\binom nk^2=\\binom{2n}{n}2^{-2n}$.",
+  pasos:[
+    {t:"Contar pasos a la derecha", h:"$S_n=2A-n$ con $A\\sim Bin(n,\\tfrac12)$; igual $S'_n=2A'-n$, independiente."},
+    {t:"Encontrarse", h:"$S_n=S'_n\\iff A=A'$."},
+    {t:"Sumar por casos", h:"$P(A=A')=\\sum_k P(A=k)P(A'=k)=\\sum_k\\binom nk^2 2^{-2n}$. ∎"},
+    {t:"Yapa", h:"Por Vandermonde es $\\binom{2n}n2^{-2n}=P(S_{2n}=0)\\approx1/\\sqrt{\\pi n}$: tiende a 0, pero despacio."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"n (pasos)", min:1, max:60, step:1, val:10} ],
+    acciones:[ {label:"Otro par de caminatas", fn:(st,rep)=>{ st.k=(st.k||0)+1; rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const n=p.n, R=LCG(50+(st.k||0)), a=caminata(R,n), b=caminata(R,n);
+      const lim=Math.max(4,Math.ceil(2*Math.sqrt(n)+2));
+      const m=ejes(ctx,W*0.5,H,0,n,-lim,lim,{nx:Math.min(n,10),ny:4,dx:0,dy:0,tit:'Dos caminatas independientes'});
+      dibCaminata(ctx,m,a,'--accent',2); dibCaminata(ctx,m,b,'--accent2',2);
+      for(let i=1;i<=n;i++) if(a[i]===b[i]) punto(ctx,m.X(i),m.Y(a[i]),4.5,'--warn');
+      let pr=1; for(let k=1;k<=n;k++) pr*=(n+k)/(4*k);
+      const m2=ejes(ctx,W,H,0,60,0,0.55,{L:W*0.58,nx:6,ny:5,dx:0,dy:2,tit:'P(S_n = S′_n) = C(2n,n)/4ⁿ'});
+      const f=x=>{ const k=Math.round(x); let q=1; for(let j=1;j<=k;j++) q*=(k+j)/(4*j); return q; };
+      for(let k=1;k<=60;k++) punto(ctx,m2.X(k),m2.Y(f(k)),k===n?6:2.2,k===n?'--warn':'--accent');
+      curvaF(ctx,m2,x=>1/Math.sqrt(Math.PI*x),'--accent2',1.4,1,60);
+      return {"P(encontrarse a tiempo n)":fm(pr,4),"1/√(πn)":fm(1/Math.sqrt(Math.PI*n),4),"coinciden en esta corrida (naranja)":a.filter((v,i)=>i>0&&v===b[i]).length+' veces'};
+    }
+  }
+},
+/* ─────────────── ADICIONALES ─────────────── */
+{
+  id:"a1", g:"Ejercicios adicionales", titulo:"A1. La lata de galletitas",
+  tema:"condicionar para simplificar · uniformes",
+  enunciado:ENUN.a1,
+  resultado:"$E(Y\\mid X)=\\dfrac{12-X}{2}$ y $E(Y)=3$ (leyendo $E(Y/X)$ como $E(Y\\mid X)$).",
+  pasos:[
+    {t:"Un lema", h:"Con $s$ dulces y una salada, lo que se come antes de sacar la salada es uniforme en $\\{0,\\dots,s\\}$: $P(\\ge j)=\\tfrac{s-j+1}{s+1}$ (producto telescópico)."},
+    {t:"Primera salada", h:"$X$ es uniforme en $\\{0,\\dots,12\\}$."},
+    {t:"La salada se devuelve", h:"Dado $X=x$ el proceso reempieza con $12-x$ dulces: $Y\\mid X=x$ uniforme en $\\{0,\\dots,12-x\\}$."},
+    {t:"Esperanzas", h:"$E(Y\\mid X)=\\tfrac{12-X}2$ y, por esperanza total, $E(Y)=\\tfrac{12-6}2=3$."}
+  ],
+  sim:{
+    controles:[ {id:"x", label:"Condicionar a X =", min:0, max:12, step:1, val:4} ],
+    acciones:[ {label:"Simular 20 000 latas", fn:(st,rep)=>{ const R=LCG(3); st.c=[]; for(let i=0;i<13;i++) st.c.push(new Array(13).fill(0));
+      for(let t=0;t<20000;t++){ let s=12,x=0; while(R()>1/(s+1)){s--;x++;} let y=0; while(R()>1/(s+1)){s--;y++;} st.c[x][y]++; } rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const x=p.x, labs=[], pt=[]; for(let y=0;y<=12;y++){ labs.push(y); pt.push(y<=12-x?1/(13-x):0); }
+      let pe=null; if(st.c){ const tot=st.c[x].reduce((a,b)=>a+b,0)||1; pe=st.c[x].map(v=>v/tot); }
+      barras(ctx,W,H,labs,pt,pe,'Distribución de Y dado X = '+x+': uniforme en {0, …, '+(12-x)+'}',y=>y===Math.round((12-x)/2));
+      return {["E(Y | X = "+x+")"]:fm((12-x)/2,1),"E(Y)":"3"};
+    }
+  }
+},
+{
+  id:"a2", g:"Ejercicios adicionales", titulo:"A2. Variables 0-1: cov = 0 ⇒ independientes",
+  tema:"tabla 2×2 · un grado de libertad",
+  enunciado:ENUN.a2,
+  resultado:"Si $cov(X,Y)=0$, $P(X=1,Y=1)=P(X=1)P(Y=1)$ y las otras tres celdas factorizan por complemento: $X$ e $Y$ son independientes.",
+  pasos:[
+    {t:"Para variables 0-1", h:"$E(X)=P(X=1)$, $E(Y)=P(Y=1)$ y $E(XY)=P(X=1,Y=1)$."},
+    {t:"cov = 0", h:"da exactamente $P(1,1)=P(X=1)P(Y=1)$."},
+    {t:"Las otras celdas", h:"$P(1,0)=P(X=1)-P(1,1)=P(X=1)P(Y=0)$, y lo mismo para $(0,1)$ y $(0,0)$."},
+    {t:"Por qué funciona", h:"Con marginales fijas, una tabla $2\\times2$ tiene un solo grado de libertad. Con tres valores ya no alcanza."}
+  ],
+  sim:{
+    controles:[ {id:"p", label:"P(X=1) (×100)", min:5, max:95, step:1, val:40}, {id:"r", label:"P(Y=1) (×100)", min:5, max:95, step:1, val:50}, {id:"d", label:"desvío de P(1,1) respecto de P(X=1)P(Y=1) (×1000)", min:-100, max:100, step:1, val:0} ],
+    draw:function(ctx,W,H,q){
+      const p=q.p/100, r=q.r/100; let s=p*r+q.d/1000;
+      s=Math.max(Math.max(0,p+r-1),Math.min(s,Math.min(p,r)));
+      const P=[[1-p-r+s,r-s],[p-s,s]], Q=[[(1-p)*(1-r),(1-p)*r],[p*(1-r),p*r]];
+      tablaConj(ctx,W*0.55,H,[0,1],[0,1],[[P[0][0],P[1][0]],[P[0][1],P[1][1]]],{tit:'Conjunta de (X, Y) (filas y, columnas x)',xl:'x',yl:'y',x0:120,cw:110});
+      ctx.save(); ctx.translate(W*0.55,0);
+      tablaConj(ctx,W*0.45,H,[0,1],[0,1],[[Q[0][0],Q[1][0]],[Q[0][1],Q[1][1]]],{tit:'Producto de las marginales',xl:'x',yl:'y',x0:80,cw:90});
+      ctx.restore();
+      const cov=s-p*r;
+      return {"cov(X,Y)":fm(cov,4),"¿independientes?":Math.abs(cov)<1e-9?'sí':'no'};
+    }
+  }
+},
+{
+  id:"a3", g:"Ejercicios adicionales", titulo:"A3. Primer oro y primera copa",
+  tema:"geométricas dependientes",
+  enunciado:ENUN.a3,
+  resultado:"No son independientes: $P(U=1,V=1)=0\\neq\\tfrac1{16}=P(U=1)P(V=1)$.",
+  pasos:[
+    {t:"Marginales", h:"Oro y copa tienen probabilidad $\\tfrac14$ cada una por extracción: $U,V\\sim Geom(\\tfrac14)$."},
+    {t:"La diagonal", h:"Una carta no puede ser oro y copa a la vez: $U\\neq V$ siempre, en particular $P(U=1,V=1)=0$."},
+    {t:"Conclusión", h:"La conjunta tiene la diagonal vacía y el producto de marginales no: no son independientes."}
+  ],
+  sim:{
+    controles:[],
+    acciones:[ {label:"Simular 20 000 secuencias", fn:(st,rep)=>{ const R=LCG(4); st.c={}; st.N=20000;
+      for(let t=0;t<20000;t++){ let u=0,v=0,k=0; while(!u||!v){ k++; const z=R(); if(z<.25&&!u) u=k; else if(z>=.25&&z<.5&&!v) v=k; } if(u<=5&&v<=5) st.c[u+','+v]=(st.c[u+','+v]||0)+1; } rep(); }} ],
+    draw:function(ctx,W,H,p,st){
+      const v=[1,2,3,4,5], g=k=>Math.pow(.75,k-1)*.25;
+      const J=v.map(b=>v.map(a=>{ if(a===b) return 0; const lo=Math.min(a,b), hi=Math.max(a,b); return Math.pow(.5,lo-1)*.25*Math.pow(.75,hi-lo-1)*.25; }));
+      const emp=st.c?v.map(b=>v.map(a=>(st.c[a+','+b]||0)/st.N)):null;
+      tablaConj(ctx,W,H,v,v,J,{tit:'P(U = u, V = v) para u, v ≤ 5: la diagonal es imposible',xl:'u',yl:'v',hl:(a,b)=>a===b,emp:emp,x0:130,cw:80});
+      return {"P(U=1,V=1)":"0","P(U=1)P(V=1)":"0,0625"};
+    }
+  }
+},
+{
+  id:"a4", g:"Ejercicios adicionales", titulo:"A4. Pares e impares en 238 tiradas",
+  tema:"relación lineal exacta · ρ = −1",
+  enunciado:ENUN.a4,
+  resultado:"$\\rho_{XY}=-1$, porque $Y=238-X$.",
+  pasos:[
+    {t:"La cuenta mental", h:"Cada tirada es par o impar: $X+Y=238$."},
+    {t:"Relación lineal", h:"$Y=238-X$ es lineal decreciente en $X$, así que $cov(X,Y)=-Var(X)$ y $\\sigma_Y=\\sigma_X$."},
+    {t:"Resultado", h:"$\\rho=-1$. El 238 y el dado no importan."}
+  ],
+  sim:{
+    controles:[ {id:"n", label:"Tiradas", min:10, max:500, step:1, val:238} ],
+    draw:function(ctx,W,H,p){
+      const n=p.n, R=LCG(8), pts=[];
+      for(let i=0;i<150;i++){ let x=0; for(let k=0;k<n;k++) if(R()<.5) x++; pts.push([x,n-x]); }
+      const lo=n/2-3*Math.sqrt(n)/2-2, hi=n/2+3*Math.sqrt(n)/2+2;
+      const m=ejes(ctx,W,H,lo,hi,lo,hi,{nx:6,ny:4,dx:0,dy:0,tit:'150 repeticiones: (pares, impares) caen todas sobre la recta x + y = '+n});
+      linea(ctx,m.X(lo),m.Y(n-lo),m.X(hi),m.Y(n-hi),'--warn',1.5,[5,4]);
+      nube(ctx,m,pts,null,3);
+      return {"ρ":"−1","X + Y":n};
+    }
+  }
+},
+{
+  id:"a5", g:"Ejercicios adicionales", titulo:"A5. Caminata de cuatro pasos",
+  tema:"conteo de trayectorias · propiedad de Markov",
+  enunciado:ENUN.a5,
+  resultado:"(a) $\\tfrac38$. (b) $\\tfrac34$. (c) $\\tfrac13$. (d) Los tres valores son $\\tfrac14$.",
+  pasos:[
+    {t:"16 trayectorias", h:"Cada una tiene probabilidad $\\tfrac1{16}$: se cuentan caminos."},
+    {t:"(a) y (b)", h:"Quedan $\\ge0$ seis caminos (todos empiezan con $+$). Salir de $[-2,2]$ exige $+++$ o $---$: 4 caminos, quedan 12."},
+    {t:"(c)", h:"De los 6 caminos con $Y_4=0$, sólo $++--$ y $+-+-$ no bajan de 0: $\\tfrac26$."},
+    {t:"(d) Markov", h:"Dado $Y_6=4$, el futuro no depende de $Y_4$; y $Y_{10}-Y_6$ tiene la ley de $Y_4$: $P(Y_4=2)=\\tfrac4{16}$."}
+  ],
+  sim:{
+    controles:[ {id:"c", tipo:"select", label:"Condición", opts:["(a) Yₙ ≥ 0","(b) |Yₙ| ≤ 2","(c) Yₙ ≥ 0 entre las que terminan en 0"], val:0} ],
+    draw:function(ctx,W,H,p){
+      const m=ejes(ctx,W,H,0,4,-4.5,4.5,{nx:4,ny:6,dx:0,dy:1,tit:'Las 16 trayectorias; en naranja las que cumplen la condición'});
+      let ok=0, tot=0;
+      for(let w=0;w<16;w++){ const s=[0]; for(let i=0;i<4;i++) s.push(s[i]+((w>>i)&1?1:-1));
+        const nn=s.slice(1); let base=true, cond;
+        if(p.c===2){ base=s[4]===0; }
+        cond=p.c===1?nn.every(v=>Math.abs(v)<=2):nn.every(v=>v>=0);
+        if(!base){ continue; } tot++; if(cond) ok++;
+        ctx.save(); ctx.translate((w%4-1.5)*3,(Math.floor(w/4)-1.5)*3);
+        dibCaminata(ctx,m,s,cond?'--warn':'--line',cond?2.4:1.4); ctx.restore(); }
+      return {"favorables":ok,"posibles":tot,"P":fm(ok/tot,4)};
+    }
+  }
+}
+];
+
+
+/* ══════ MOTOR — no editar ══════ */
+const nav=document.getElementById('navlinks'), main=document.getElementById('main');
+let grupoActual=null;
+
+function ctlHTML(c){
+  if(c.tipo==='check')
+    return `<label class="ctl chk"><input type="checkbox" data-ctl="${c.id}" ${c.val?'checked':''}>${c.label}</label>`;
+  if(c.tipo==='select')
+    return `<label class="ctl">${c.label}<select data-ctl="${c.id}">`+
+      c.opts.map((o,i)=>`<option value="${i}"${i===(c.val||0)?' selected':''}>${o}</option>`).join('')+`</select></label>`;
+  return `<label class="ctl">${c.label} <span class="val" data-for="${c.id}">${c.val}</span>
+     <input type="range" data-ctl="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}"></label>`;
+}
+
+EJERCICIOS.forEach(e=>{
+  if(e.g&&e.g!==grupoActual){grupoActual=e.g;
+    const d=document.createElement('div');d.className='grp';d.textContent=e.g;nav.appendChild(d);}
+  const a=document.createElement('a');
+  a.href='#'+e.id; a.textContent=e.titulo; a.dataset.id=e.id;
+  a.onclick=ev=>{ev.preventDefault();show(e.id);};
+  nav.appendChild(a);
+
+  const s=document.createElement('section');
+  s.className='ej'; s.id=e.id;
+  const accHTML=(e.sim&&e.sim.acciones||[]).map((b,i)=>`<button data-acc="${i}">${b.label}</button>`).join(' ');
+  s.innerHTML=`
+    <div class="tag">${e.tema||''}</div>
+    <h2>${e.titulo}</h2>
+    <div class="card enunciado"><h3>Enunciado</h3><div>${e.enunciado}</div></div>
+    ${e.pasos&&e.pasos.length?`<div class="card"><h3>Resolución paso a paso</h3>
+      <div class="stepbar">
+        <button class="ghost" data-act="prev">◀ Anterior</button>
+        <button data-act="next">Siguiente ▶</button>
+        <button class="ghost" data-act="play">▶ Reproducir</button>
+        <div class="dots">${e.pasos.map((_,k)=>`<div class="dot${k?'':' on'}"></div>`).join('')}</div>
+      </div>
+      <div class="steps">${e.pasos.map((q,k)=>
+        `<div class="step${k?'':' show'}"><div class="stepnum">Paso ${k+1} de ${e.pasos.length} — ${q.t}</div><p>${q.h}</p></div>`).join('')}
+      </div></div>`:''}
+    ${e.sim?`<div class="card"><h3>Simulación interactiva</h3>
+      <div class="controls">${(e.sim.controles||[]).map(ctlHTML).join('')}${accHTML?`<div style="display:flex;gap:8px">${accHTML}</div>`:''}</div>
+      <canvas width="960" height="360"></canvas>
+      <div class="stats"></div></div>`:''}
+    ${e.resultado?`<div class="card resultado"><h3>Resultado</h3><div>${e.resultado}</div></div>`:''}
+    <footer>Probabilidades y Estadística Matemática · Licenciatura en Matemática · FCEx–UNCPBA · Práctica 6</footer>`;
+  main.appendChild(s);
+
+  if(e.pasos&&e.pasos.length){
+    let cur=0,timer=null;
+    const steps=[].slice.call(s.querySelectorAll('.step')), dots=[].slice.call(s.querySelectorAll('.dot'));
+    const render=()=>{steps.forEach((el,k)=>el.classList.toggle('show',k===cur));
+                      dots.forEach((d,k)=>d.classList.toggle('on',k<=cur));};
+    s.querySelector('[data-act=prev]').onclick=()=>{cur=Math.max(0,cur-1);render();};
+    s.querySelector('[data-act=next]').onclick=()=>{cur=Math.min(steps.length-1,cur+1);render();};
+    s.querySelector('[data-act=play]').onclick=ev=>{
+      const btn=ev.currentTarget;
+      if(timer){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+      cur=0;render();btn.textContent='❚❚ Pausar';
+      timer=setInterval(()=>{ if(cur>=steps.length-1){clearInterval(timer);timer=null;btn.textContent='▶ Reproducir';return;}
+                              cur++;render(); },3400);
+    };
+  }
+
+  if(e.sim){
+    const cv=s.querySelector('canvas'), ctx=cv.getContext('2d'), out=s.querySelector('.stats');
+    const st={};
+    const params=()=>{const p={};
+      s.querySelectorAll('[data-ctl]').forEach(i=>{p[i.dataset.ctl]= i.type==='checkbox'?(i.checked?1:0):+i.value;});
+      return p;};
+    const paint=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const r=e.sim.draw(ctx,cv.width,cv.height,params(),st)||{};
+      out.innerHTML=Object.keys(r).map(k=>`<div>${k}<b>${r[k]}</b></div>`).join('');
+    };
+    s.querySelectorAll('[data-ctl]').forEach(i=>i.addEventListener('input',()=>{
+      const v=s.querySelector('[data-for="'+i.dataset.ctl+'"]'); if(v)v.textContent=i.value; paint();}));
+    (e.sim.acciones||[]).forEach((b,i)=>{
+      const btn=s.querySelector('[data-acc="'+i+'"]'); if(btn)btn.onclick=()=>b.fn(st,paint);});
+    e.sim._paint=paint;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('section.ej').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#navlinks a').forEach(a=>a.classList.toggle('active',a.dataset.id===id));
+  const e=EJERCICIOS.filter(x=>x.id===id)[0];
+  if(e&&e.sim&&e.sim._paint) e.sim._paint();
+  history.replaceState(null,'','#'+id); window.scrollTo(0,0);
+}
+show((location.hash||'').slice(1)||EJERCICIOS[0].id);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.ej.active');
+  if(a){const e=EJERCICIOS.filter(x=>x.id===a.id)[0]; if(e&&e.sim&&e.sim._paint)e.sim._paint();}});
+</script>
+</body>
+</html>
